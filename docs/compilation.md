@@ -52,6 +52,21 @@ Ao confirmar, uma tabela de resultados semelhante a abaixo será exibida, ordena
 
 ![TableCompileResult](./compile/CompileResults.PNG)
 
+### Aviso em caso de erro de compilação
+
+Quando a compilação retornar diagnósticos `ERROR` ou `FATAL`, ou o
+Language Server informar um código de retorno diferente de zero, a extensão
+abre uma **janela de erro modal**. A janela resume os primeiros erros encontrados,
+inclui o arquivo afetado e oferece acesso à saída `TOTVS LS` ou à visão
+`Problemas`. Falhas de comunicação durante a compilação também são mostradas
+nessa janela.
+
+Avisos do tipo `WARN` não são tratados como erros: continuam sendo apresentados
+na visão `Problemas`, sem interromper o usuário com um erro modal.
+
+A geração de patch após compilação respeita os mesmos critérios e não deve
+continuar quando a compilação for considerada malsucedida.
+
 ## Acesso exclusivo ao _RPO_
 
 Para compilar necessitamos de acesso exclusivo ao RPO. Caso contrário, o Application Server retornará um erro de:

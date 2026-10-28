@@ -207,6 +207,10 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
 
     const outcome = getCompilationOutcome(response);
     if (outcome.failed) {
+      // Preserve the original behavior of focusing compiler diagnostics.
+      if (outcome.errors.length > 0) {
+        void vscode.commands.executeCommand("workbench.action.problems.focus");
+      }
       const description = formatCompilationFailure(outcome, filesPaths);
       languageClient.outputChannel.appendLine("[ERROR] " + description.replace(/\n/g, " | "));
       showCompilationFailure("Falha na compilação", description);
