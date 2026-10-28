@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import serverProvider from "./serverItemProvider";
 
-const RESOURCE_FOLDER = path.join(vscode.extensions.getExtension("paulodrjr.tds-vscode-dg")?.extensionPath || path.resolve(__dirname, ".."), "resources");
+const RESOURCE_FOLDER = path.join(vscode.extensions.getExtension("TOTVS.tds-vscode")?.extensionPath || path.resolve(__dirname, ".."), "resources");
 const RESOURCE_DARK = path.join(RESOURCE_FOLDER, "dark");
 const RESOURCE_LIGHT = path.join(RESOURCE_FOLDER, "light");
 

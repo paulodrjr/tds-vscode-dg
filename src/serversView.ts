@@ -40,7 +40,7 @@ export class ServersExplorer {
   constructor(context: vscode.ExtensionContext) {
     let currentPanel: vscode.WebviewPanel | undefined = undefined;
 
-    vscode.commands.registerCommand("tds-vscode-dg.add", () => {
+    vscode.commands.registerCommand("totvs-developer-studio.add", () => {
       if (vscode.workspace.workspaceFolders === undefined) {
         vscode.window.showErrorMessage("No folder opened.");
         return;
@@ -50,7 +50,7 @@ export class ServersExplorer {
         currentPanel.reveal();
       } else {
         currentPanel = vscode.window.createWebviewPanel(
-          "tds-vscode-dg.add",
+          "totvs-developer-studio.add",
           vscode.l10n.t("New Server"),
           vscode.ViewColumn.One,
           {
@@ -133,7 +133,7 @@ export class ServersExplorer {
       }
     });
 
-    vscode.commands.registerCommand("tds-vscode-dg.config", () => {
+    vscode.commands.registerCommand("totvs-developer-studio.config", () => {
       if (vscode.workspace.workspaceFolders === undefined) {
         vscode.window.showErrorMessage("No folder opened.");
         return;
@@ -153,11 +153,11 @@ export class ServersExplorer {
     const options: vscode.TreeViewOptions<ServerItem | EnvSection> = {
       treeDataProvider: serverProvider,
     };
-    vscode.window.createTreeView("tds_dg_server", options);
-    vscode.window.registerTreeDataProvider("tds_dg_server", serverProvider);
+    vscode.window.createTreeView("totvs_server", options);
+    vscode.window.registerTreeDataProvider("totvs_server", serverProvider);
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.connect",
+      "totvs-developer-studio.connect",
       (serverItem: ServerItem) => {
         let ix = serverProvider.localServerItems.indexOf(serverItem);
         if (ix >= 0) {
@@ -188,7 +188,7 @@ export class ServersExplorer {
     );
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.reconnect",
+      "totvs-developer-studio.reconnect",
       (serverItem: ServerItem) => {
         let ix = serverProvider.localServerItems.indexOf(serverItem);
         if (ix >= 0) {
@@ -210,7 +210,7 @@ export class ServersExplorer {
     );
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.disconnect",
+      "totvs-developer-studio.disconnect",
       (serverItem: ServerItem) => {
         if (serverItem.isConnected) {
           return queueConnection(() => vscode.window.withProgress(
@@ -232,7 +232,7 @@ export class ServersExplorer {
     );
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.selectenv",
+      "totvs-developer-studio.selectenv",
       (environment: EnvSection) => {
         inputConnectionParameters(
           context,
@@ -244,7 +244,7 @@ export class ServersExplorer {
     );
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.delete",
+      "totvs-developer-studio.delete",
       (serverItem: ServerItem) => {
         let ix = serverProvider.localServerItems.indexOf(serverItem);
         if (ix >= 0) {
@@ -254,14 +254,14 @@ export class ServersExplorer {
     );
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.delete.environment",
+      "totvs-developer-studio.delete.environment",
       (environmentItem: EnvSection) => {
         ServersConfig.deleteEnvironmentServer(environmentItem);
       }
     );
 
     vscode.commands.registerCommand(
-      "tds-vscode-dg.rename",
+      "totvs-developer-studio.rename",
       (serverItem: ServerItem) => {
         let ix = serverProvider.localServerItems.indexOf(serverItem);
         if (ix >= 0) {
@@ -364,10 +364,10 @@ function doFinishConnectProcess(
   runCommandUpdateMonitor();
   //let isSafeRPO = serverItem.isSafeRPO; // this is not working returning => undefined
   let isSafeRPO = serverItem.buildVersion.localeCompare("7.00.191205P") > 0;
-  // custom context tds-vscode-dg.isSafeRPO
+  // custom context totvs-developer-studio.isSafeRPO
   vscode.commands.executeCommand(
     "setContext",
-    "tds-vscode-dg.isSafeRPO",
+    "totvs-developer-studio.isSafeRPO",
     isSafeRPO
   );
 }
@@ -387,7 +387,7 @@ function executeCommand(commandId: string) {
 }
 
 function runCommandUpdateMonitor() {
-  executeCommand("_tds-vscode-dg.updateMonitorPanel");
+  executeCommand("_totvs-developer-studio.updateMonitorPanel");
 }
 
 // Keep connection changes ordered so a delayed disconnect cannot clear a new session.
@@ -554,7 +554,7 @@ async function doDisconnect(serverItem: ServerItem): Promise<void> {
     if (current && current.id === serverItem.id) {
       ServersConfig.clearConnectedServerConfig();
     }
-    await executeCommand("_tds-vscode-dg.clearMonitorPanel");
+    await executeCommand("_totvs-developer-studio.clearMonitorPanel");
   }
 }
 

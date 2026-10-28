@@ -46,7 +46,7 @@ export class InspectorLoader implements vscode.Disposable {
   private _results: IObjectData[] | IFunctionData[];
 
   constructor(context: vscode.ExtensionContext, options: IInspectOptiosView) {
-    const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
+    const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
     this._extensionPath = ext.extensionPath;
     this._options = options;
     this._context = context;
@@ -248,7 +248,7 @@ export class InspectorLoader implements vscode.Disposable {
 
     writeLine(SEPARATOR_LINE);
 
-    const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
+    const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
     const now = new Date().toLocaleString();
 
     writeLine("");
