@@ -23,7 +23,7 @@
   "engines": {
     "vscode": "^1.97.2"
   },
-  "icon": "icons/tds-vscode-dg.png",
+  "icon": "icons/totvs-developer-studio.png",
   "categories": [
     "Programming Languages",
     "Snippets",
