@@ -720,6 +720,13 @@
               "description": "Indica como as _strings_ devem ser informadas."
             }
           }
+        },
+        "totvsLanguageServer.compilation.unresponsiveWarningSeconds": {
+          "type": "number",
+          "default": 600,
+          "minimum": 30,
+          "maximum": 86400,
+          "description": "Show a warning when a compilation request has not returned after this many seconds. Does not release the remote compilation lock."
         }
       }
     },
@@ -1054,6 +1061,12 @@
           "light": "resources/light/rpolog.png",
           "dark": "resources/dark/rpolog.png"
         }
+      },
+      {
+        "command": "totvs-developer-studio.resetBuildOperation",
+        "title": "Reset Local Compilation Lock",
+        "category": "TOTVS",
+        "description": "Manually release the local lock after confirming the AppServer has stopped compiling."
       }
     ],
     "keybindings": [

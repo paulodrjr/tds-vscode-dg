@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { blockBuildCommands, languageClient } from "../extension";
+import { beginBuildOperation, completeBuildOperation, isBuildOperationActive, languageClient } from "../extension";
 import * as fs from "fs";
 import Utils, { ServersConfig } from "../utils";
 
@@ -42,261 +42,162 @@ function _getCompileOptionsDefault(): CompileOptions {
   };
 }
 
-export function generatePpo(filePath: string, options?: any): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    if (!filePath || filePath.length == 0) {
-      reject(new Error("Undefined filePath."));
-      return;
+/** Warn about unresponsive requests without releasing a potentially active remote build. */
+async function watchCompilation<T>(request: Thenable<T>, operationId: number): Promise<T> {
+  const config = vscode.workspace.getConfiguration("totvsLanguageServer");
+  const requestedSeconds = config.get<number>("compilation.unresponsiveWarningSeconds", 600);
+  const seconds = Math.max(30, Math.min(86400, Number(requestedSeconds) || 600));
+  const timer = setTimeout(() => {
+    if (isBuildOperationActive(operationId)) {
+      const message = "Compilation has not returned after " + seconds +
+        " seconds. Its state on the AppServer is unknown. Check the AppServer before " +
+        "using TOTVS: Reset Local Compilation Lock.";
+      languageClient.outputChannel.appendLine("[Warning] " + message);
+      void vscode.window.showWarningMessage(message);
     }
-    if (!fs.existsSync(filePath)) {
-      reject(new Error("File '" + filePath + "' not found."));
-      return;
+  }, seconds * 1000);
+
+  try {
+    return await request;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function generatePpo(filePath: string, options?: any): Promise<string> {
+  if (!filePath) throw new Error("Undefined filePath.");
+  if (!fs.existsSync(filePath)) throw new Error("File '" + filePath + "' not found.");
+  if (!Utils.isAdvPlSource(filePath)) {
+    throw new Error("This file has an invalid AdvPL source file extension.");
+  }
+
+  const server = ServersConfig.getCurrentServer();
+  if (!server) throw new Error("No server connected.");
+  const includes = ServersConfig.getIncludes(true, server) || [];
+  if (!includes.length) throw new Error("Includes undefined.");
+
+  const includesUris = includes.map(include => vscode.Uri.file(include).toString());
+  const filesUris = [vscode.Uri.file(filePath).toString()];
+  const optionsCompile = _getCompileOptionsDefault();
+  optionsCompile.recompile = true;
+  optionsCompile.generatePpoFile = false;
+  optionsCompile.showPreCompiler = false;
+  optionsCompile.returnPpo = true;
+
+  const operationId = beginBuildOperation();
+  if (operationId === undefined) throw new Error("Compilation already in progress.");
+  try {
+    const response = await watchCompilation(sendCompilation(
+      server, includesUris, filesUris, optionsCompile, undefined, true
+    ), operationId);
+    const ppo = response.compileInfos?.find(item => item.status === "APPRE");
+    if (!ppo) throw new Error("PPO not returned by the language server.");
+
+    const encoding = String(options?.encoding || "cp1252").toLowerCase();
+    if (encoding === "cp1252" || encoding === "windows-1252") {
+      return windows1252.encode(ppo.detail);
     }
-
-    const server = ServersConfig.getCurrentServer();
-    if (!server) {
-      reject(
-        new Error(
-          "No server connected. Check if there is a server connected in 'totvs.tds-vscode' extension."
-        )
-      );
-      return;
+    if (encoding === "cp1251" || encoding === "windows-1251") {
+      return windows1251.encode(ppo.detail);
     }
-
-    const serverItem = ServersConfig.getServerById(server.id);
-    let isAdvplsource: boolean = Utils.isAdvPlSource(filePath);
-    if (!isAdvplsource) {
-      reject(
-        new Error("This file has an invalid AdvPL source file extension.")
-      );
-      return;
-    }
-
-    const includes = ServersConfig.getIncludes(true, serverItem) || [];
-    let includesUris: Array<string> = includes.map((include) => {
-      return vscode.Uri.file(include).toString();
-    });
-    if (includesUris.length == 0) {
-      reject(new Error("Includes undefined."));
-      return;
-    }
-
-    let filesUris: Array<string> = [];
-    filesUris.push(vscode.Uri.file(filePath).toString());
-
-    //const configADVPL = vscode.workspace.getConfiguration("totvsLanguageServer");
-    let extensionsAllowed: string[];
-    // if (configADVPL.get("folder.enableExtensionsFilter", true)) {
-    //   extensionsAllowed = configADVPL.get("folder.extensionsAllowed", []); // Le a chave especifica
-    // }
-
-    const compileOptions = _getCompileOptionsDefault();
-    compileOptions.recompile = true;
-    compileOptions.generatePpoFile = false;
-    compileOptions.showPreCompiler = false;
-    compileOptions.returnPpo = true;
-
-    if (blockBuildCommands(true)) {
-      sendCompilation(
-        server,
-        includesUris,
-        filesUris,
-        compileOptions,
-        extensionsAllowed,
-        isAdvplsource
-      ).then(
-        (response: CompileResult) => {
-          blockBuildCommands(false);
-
-          let ppoFound = false;
-          if (response.compileInfos.length > 0) {
-            for (let index = 0; index < response.compileInfos.length; index++) {
-              const compileInfo = response.compileInfos[index];
-              if (compileInfo.status === "APPRE") {
-                ppoFound = true;
-                // o compileInfo.detail chega do LS com encoding utf8
-                // a extensão tds-vscode realiza a conversão para o enconding conforme informado em options.encoding
-                // caso nenhum encoding seja informado, converte para o padrão AdvPL cp1252
-                if (options && options.encoding) {
-                  let encoding: string = (<string>(
-                    options.encoding
-                  )).toLowerCase();
-                  //console.log("encoding: "+encoding);
-                  if (options.encoding === "utf8") {
-                    resolve(compileInfo.detail);
-                  } else if (
-                    encoding === "windows-1252" ||
-                    encoding === "cp1252"
-                  ) {
-                    //let apple = "Maçã";
-                    //console.log(apple);
-                    resolve(windows1252.encode(compileInfo.detail));
-                  } else if (
-                    encoding === "windows-1251" ||
-                    encoding === "cp1251"
-                  ) {
-                    //let helloWorld = "Привет мир";
-                    //console.log(helloWorld);
-                    //resolve(windows1251.encode(helloWorld));
-                    resolve(windows1251.encode(compileInfo.detail));
-                  } else {
-                    // unknown encoding - fallback to utf8
-                    resolve(compileInfo.detail);
-                  }
-                } else {
-                  // if there is no encoding option - use windows-1252
-                  resolve(windows1252.encode(compileInfo.detail));
-                }
-              }
-            }
-          }
-          if (!ppoFound) {
-            reject(new Error("PPO not returned by the language server."));
-          }
-        },
-        (err: ResponseError<object>) => {
-          blockBuildCommands(false);
-          languageClient.error(err.message, err);
-          reject(new Error(err.message));
-        }
-      );
-    } else {
-      reject(new Error("Compilation already in progress."));
-    }
-  });
+    return ppo.detail;
+  } finally {
+    completeBuildOperation(operationId);
+  }
 }
 
 /**
  * Builds a file.
  */
-export function buildFile(filename: string[], recompile: boolean) {
+export function buildFile(filename: string[], recompile: boolean): Promise<void> {
   const compileOptions = _getCompileOptionsDefault();
   compileOptions.recompile = recompile;
-  buildCode(filename, compileOptions);
+  return buildCode(filename, compileOptions);
 }
 
 /**
  * Build a file list.
  */
-async function buildCode(filesPaths: string[], compileOptions: CompileOptions) {
-  const server = ServersConfig.getCurrentServer();
+async function buildCode(filesPaths: string[], compileOptions: CompileOptions): Promise<void> {
+  const config = vscode.workspace.getConfiguration("totvsLanguageServer");
+  const output = languageClient.outputChannel;
+  if (config.get("clearConsoleBeforeCompile") !== false) output.clear();
+  if (config.get("showConsoleOnCompile") !== false) output.show();
 
-  const configADVPL = vscode.workspace.getConfiguration("totvsLanguageServer");
-  const shouldClearConsole = configADVPL.get("clearConsoleBeforeCompile");
-  if (shouldClearConsole !== false) {
-    languageClient.outputChannel.clear();
-  }
-  const showConsoleOnCompile = configADVPL.get("showConsoleOnCompile");
-  if (showConsoleOnCompile !== false) {
-    languageClient.outputChannel.show();
-  }
-
-  const resourcesToConfirm: vscode.TextDocument[] =
-    vscode.workspace.textDocuments.filter((d) => !d.isUntitled && d.isDirty);
-  const count = resourcesToConfirm.length;
-
-  if (count !== 0) {
-    if (!await vscode.workspace.saveAll(false)) {
+  const dirtyFiles = vscode.workspace.textDocuments.some(doc => !doc.isUntitled && doc.isDirty);
+  if (dirtyFiles) {
+    const saved = await vscode.workspace.saveAll(false);
+    if (!saved) {
       vscode.window.showWarningMessage(
         vscode.l10n.t("Operation canceled because it is not possible to save edited files.")
       );
       return;
     }
-    vscode.window.showWarningMessage(
-      vscode.l10n.t("Files saved successfully.")
-    );
   }
 
-  if (server) {
-    //Só faz sentido processar os includes se existir um servidor selecionado onde sera compilado.
-    //Verifica se existem arquivos AdvPL na lista de arquivos a serem compilados
-    let hasAdvplsource: boolean =
-      filesPaths.filter((file) => {
-        return Utils.isAdvPlSource(file);
-      }).length > 0;
-    //Pega os includes do servidor conectado
-    let includes: Array<string> = [];
-    includes = ServersConfig.getIncludes(true, server) || [];
-    if (!includes.toString()) {
+  const server = ServersConfig.getCurrentServer();
+  if (!server) {
+    vscode.window.showErrorMessage(vscode.l10n.t("No server connected"));
+    return;
+  }
+
+  const filesUris = filesPaths.filter(file => {
+    if (Utils.ignoreResource(file)) {
+      languageClient.warn(vscode.l10n.t(
+        "Resource appears in the list of files to ignore. Resource: {0}", file
+      ));
+      return false;
+    }
+    return true;
+  }).map(file => vscode.Uri.file(file).toString());
+
+  if (!filesUris.length) {
+    vscode.window.showWarningMessage("There are no eligible files to compile.");
+    return;
+  }
+  const hasAdvplSource = filesPaths.some(file => Utils.isAdvPlSource(file));
+  const includePaths = ServersConfig.getIncludes(true, server) || [];
+  const includesUris = includePaths.length
+    ? includePaths.map(include => vscode.Uri.file(include).toString())
+    : (vscode.workspace.workspaceFolders || []).map(folder => folder.uri.toString());
+
+  if (hasAdvplSource && !includesUris.length) {
+    vscode.window.showErrorMessage("No valid include folders were configured.");
+    return;
+  }
+
+  let extensionsAllowed: string[] | undefined;
+  if (config.get("folder.enableExtensionsFilter", true)) {
+    extensionsAllowed = config.get<string[]>("folder.extensionsAllowed", []);
+  }
+
+  const operationId = beginBuildOperation();
+  if (operationId === undefined) return;
+
+  try {
+    const response = await watchCompilation(
+      sendCompilation(server, includesUris, filesUris, compileOptions,
+        extensionsAllowed, hasAdvplSource), operationId);
+
+    if (!isBuildOperationActive(operationId)) {
+      // The LSP connection was restarted: ignore the response from the former session.
       return;
     }
-    //Converte os includes em URIs
-    let includesUris: Array<string> = [];
-    for (let idx = 0; idx < includes.length; idx++) {
-      includesUris.push(vscode.Uri.file(includes[idx]).toString());
+    if (response.returnCode === 40840) ServersConfig.removeExpiredAuthorization();
+    const errors = response.compileInfos?.some(info =>
+      info.status === "FATAL" || info.status === "ERROR" || info.status === "WARN");
+    if (errors) {
+      void vscode.commands.executeCommand("workbench.action.problems.focus");
     }
-    if (includesUris.length === 0) {
-      const wp: string[] = vscode.workspace.workspaceFolders.map((uri) => {
-        return uri.uri.toString();
-      });
-      includesUris.push(...wp);
+    if (filesUris.length > 1 && (response.compileInfos?.length || 0) > 0) {
+      verifyCompileResult(response);
     }
-    //Converte os arquivos a serem compilados para URIs
-    let filesUris: Array<string> = [];
-    filesPaths.forEach((file) => {
-      if (!Utils.ignoreResource(file)) {
-        filesUris.push(vscode.Uri.file(file).toString());
-      } else {
-        languageClient.warn(
-          vscode.l10n.t("Resource appears in the list of files to ignore. Resource: {0}", file)
-        );
-      }
-    });
-    //Obtem a lista de extensoes permitidas, se houver
-    let extensionsAllowed: string[];
-    if (configADVPL.get("folder.enableExtensionsFilter", true)) {
-      extensionsAllowed = configADVPL.get("folder.extensionsAllowed", []); // Le a chave especifica
-    }
-    //Envia a mensagem de compilacao
-    if (blockBuildCommands(true)) {
-      sendCompilation(
-        server,
-        includesUris,
-        filesUris,
-        compileOptions,
-        extensionsAllowed,
-        hasAdvplsource
-      ).then(
-        (response: CompileResult) => {
-          blockBuildCommands(false);
-
-          if (response.returnCode === 40840) {
-            ServersConfig.removeExpiredAuthorization();
-          }
-          if (response.compileInfos.length > 0) {
-            // Exibe aba problems casa haja pelo menos um erro ou warning
-            let showProblems = false;
-            for (let index = 0; index < response.compileInfos.length; index++) {
-              const compileInfo = response.compileInfos[index];
-              if (
-                compileInfo.status === "FATAL" ||
-                compileInfo.status === "ERROR" ||
-                compileInfo.status === "WARN"
-              ) {
-                showProblems = true;
-                break;
-              }
-            }
-            if (showProblems) {
-              // focus
-              vscode.commands.executeCommand("workbench.action.problems.focus");
-            }
-            if (filesUris.length > 1) {
-              verifyCompileResult(response);
-            }
-          }
-        },
-        (err: ResponseError<object>) => {
-          blockBuildCommands(false);
-          languageClient.error(err.message, err);
-          vscode.window.showErrorMessage(err.message);
-        }
-      );
-    }
-  } else {
-    vscode.window.showErrorMessage(
-      vscode.l10n.t("No server connected")
-    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    languageClient.error(message, err as any);
+    vscode.window.showErrorMessage("Compilation failed: " + message);
+  } finally {
+    completeBuildOperation(operationId);
   }
 }
 
@@ -347,19 +248,19 @@ export function commandBuildFile(
     filename = editor.document.uri.fsPath;
   }
 
-  vscode.window.setStatusBarMessage(
-    `$(gear~spin) ${vscode.l10n.t("Building...")}`,
-    new Promise((resolve, reject) => {
-      if (files) {
-        const arrayFiles: string[] = changeToArrayString(files);
-        let allFiles = Utils.getAllFilesRecursive(arrayFiles, true);
-        buildFile(allFiles, recompile);
-      } else if (filename !== undefined) {
-        buildFile([filename], recompile);
-      }
-      resolve(true);
-    })
-  );
+  let buildPromise: Promise<void> | undefined;
+  if (files) {
+    const paths = changeToArrayString(files);
+    buildPromise = buildFile(Utils.getAllFilesRecursive(paths, true), recompile);
+  } else if (filename !== undefined) {
+    buildPromise = buildFile([filename], recompile);
+  }
+  if (buildPromise) {
+    vscode.window.setStatusBarMessage(
+      `$(gear~spin) ${vscode.l10n.t("Building...")}`, buildPromise
+    );
+  }
+
 }
 
 function changeToArrayString(allFiles) {

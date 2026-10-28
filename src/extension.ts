@@ -245,6 +245,24 @@ export function activate(context: ExtensionContext) {
     )
   );
 
+  context.subscriptions.push(commands.registerCommand(
+    "totvs-developer-studio.resetBuildOperation",
+    async () => {
+      if (canBuild) {
+        window.showInformationMessage("There is no blocked compilation to reset.");
+        return;
+      }
+      const answer = await window.showWarningMessage(
+        "The previous compilation might still be running on the AppServer. " +
+        "Only release the local lock after verifying that the remote operation has finished. Release it?",
+        { modal: true }, "Release local lock"
+      );
+      if (answer === "Release local lock") {
+        resetBuildCommands();
+      }
+    }
+  ));
+
   //Compila os fontes/recursos selecionados
   context.subscriptions.push(
     commands.registerCommand(
@@ -580,7 +598,7 @@ export function activate(context: ExtensionContext) {
   // Register custom editor for patch files
   context.subscriptions.push(PatchEditorProvider.register(context));
 
-  blockBuildCommands(false);
+  resetBuildCommands();
   showBanner();
 
   // 'export' public api-surface
@@ -711,27 +729,37 @@ function showBanner(force: boolean = false) {
   }
 }
 
-let canBuild: boolean = true;
+let canBuild = true;
+let buildOperationId = 0;
 
-// The old request cannot finish when the Language Server transport has died.
-export function resetBuildCommands(): void {
-  canBuild = true;
-  void vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", true);
+/** Each compilation owns a unique generation; late responses cannot unlock another build. */
+export function beginBuildOperation(): number | undefined {
+  if (!canBuild) {
+    window.showWarningMessage("A compilation is already running or awaiting an unconfirmed response.");
+    return undefined;
+  }
+  canBuild = false;
+  buildOperationId++;
+  void commands.executeCommand("setContext", "tds-vscode.canBuild", false);
+  return buildOperationId;
 }
 
-export function blockBuildCommands(block: boolean): boolean {
-  if (!canBuild && block) {
-    window.showInformationMessage(
-      `Request cancelled. Build process already in progress.`
-    );
-    return false;
+export function isBuildOperationActive(id: number): boolean {
+  return !canBuild && id === buildOperationId;
+}
+
+export function completeBuildOperation(id: number): void {
+  if (isBuildOperationActive(id)) {
+    canBuild = true;
+    void commands.executeCommand("setContext", "tds-vscode.canBuild", true);
   }
+}
 
-  canBuild = !block;
-
-  vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", canBuild);
-
-  return true;
+/** Invalidates pending request generations after an explicit recovery or LSP failure. */
+export function resetBuildCommands(): void {
+  buildOperationId++;
+  canBuild = true;
+  void commands.executeCommand("setContext", "tds-vscode.canBuild", true);
 }
 
 export function canDebug(): boolean {
