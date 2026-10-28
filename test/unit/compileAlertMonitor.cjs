@@ -86,7 +86,15 @@ async function run() {
   await sleep(230);
   assert.equal(dialogs.length, 3, "late fatal messages must still show a modal");
 
+  // Resetting the Language Server immediately after a FATAL must not erase
+  // its pending alert before the debounce timer fires.
+  alerts.beginCompilationAlerts(106);
+  alerts.setCompilationAlertSources(106, ["C:\\\\DEV\\\\CRASH.PRW"]);
+  listener.appendLine("[Error - 6:37:22 PM] [FATAL] Aborting: CRASH.PRW(13)");
   alerts.resetCompilationAlerts();
+  await sleep(30);
+  assert.equal(dialogs.length, 4, "LSP restart must preserve the fatal warning");
+
   listener.dispose();
   console.log("Compiler OutputChannel modal alert tests passed.");
 }

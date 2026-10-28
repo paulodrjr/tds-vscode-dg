@@ -27,6 +27,11 @@ function clearSessionTimers(session: CompileSession): void {
 }
 
 export function beginCompilationAlerts(id: number): void {
+  // Never discard an already detected compiler FATAL when another build starts
+  // before the short multiline-diagnostic collection period ends.
+  if (currentSession?.pending && !currentSession.alerted) {
+    showPendingAlert(currentSession);
+  }
   if (currentSession) clearSessionTimers(currentSession);
   currentSession = { id, alerted: false, sourceFiles: [], generatesPatch: false };
 }
@@ -40,6 +45,10 @@ export function setCompilationAlertSources(
 }
 
 export function resetCompilationAlerts(): void {
+  // A Language Server crash/reset must not silently erase a pending fatal.
+  if (currentSession?.pending && !currentSession.alerted) {
+    showPendingAlert(currentSession);
+  }
   if (currentSession) clearSessionTimers(currentSession);
   currentSession = undefined;
 }
