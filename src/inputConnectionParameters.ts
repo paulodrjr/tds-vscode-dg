@@ -173,21 +173,30 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
 			.map(name => ({ label: name }));
 	}
 
-	async function main() {
-		const connectState = await collectConnectInputs();
-		const server = ServersConfig.getServerById((typeof connectState.server !== 'string') ? (connectState.server.detail ? connectState.server.detail : "") : connectState.server);
+  async function main() {
+    const connectState = await collectConnectInputs();
+    if (!connectState.server || !connectState.environment) return;
 
-		if (connectState.reconnectionToken) {
-			let environmentName = (typeof connectState.environment === "string") ? connectState.environment : (connectState.environment as QuickPickItem).label;
-			reconnectServer(server, environmentName, connType);
-		} else {
-			const environment = (typeof connectState.environment !== 'string') ? connectState.environment.label : connectState.environment;
-			server.name = server.name; //FIX: quebra-galho necessário para a árvore de servidores
-			connectServer(server, environment, connType);
-		}
-	}
+    const serverId = typeof connectState.server === "string"
+      ? connectState.server : connectState.server.detail || "";
+    const server = ServersConfig.getServerById(serverId);
+    if (!server) {
+      vscode.window.showErrorMessage("The selected server no longer exists.");
+      return;
+    }
+    const environment = typeof connectState.environment === "string"
+      ? connectState.environment : connectState.environment.label;
+    if (connectState.reconnectionToken) {
+      await reconnectServer(server, environment, connType);
+    } else {
+      await connectServer(server, environment, connType);
+    }
+  }
 
-	main();
+  void main().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage("Unable to select the server: " + message);
+  });
 }
 
 export function serverSelection(args, context) {

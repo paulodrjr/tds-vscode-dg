@@ -212,6 +212,7 @@ export class ServersExplorer {
     vscode.commands.registerCommand(
       "totvs-developer-studio.disconnect",
       (serverItem: ServerItem) => {
+        invalidateConnectionAttempts();
         if (serverItem.isConnected) {
           return queueConnection(() => vscode.window.withProgress(
             {
@@ -392,6 +393,26 @@ function runCommandUpdateMonitor() {
 
 // Keep connection changes ordered so a delayed disconnect cannot clear a new session.
 let connectionQueue: Promise<void> = Promise.resolve();
+let connectionGeneration = 0;
+let pendingAuthentication: { generation: number; serverId: string; environment: string; token: string } | undefined;
+
+/** Invalidate all outstanding authentication prompts and connection requests. */
+export function invalidateConnectionAttempts(): void {
+  connectionGeneration++;
+  pendingAuthentication = undefined;
+}
+
+export async function cancelAuthentication(serverItem: ServerItem, generation: number): Promise<void> {
+  if (generation !== connectionGeneration || pendingAuthentication?.generation !== generation) {
+    return;
+  }
+  pendingAuthentication = undefined;
+  try {
+    await sendDisconnectRequest(serverItem);
+  } catch (error) {
+    console.warn("Could not disconnect the canceled authentication session", error);
+  }
+}
 
 function queueConnection(operation: () => Thenable<void>): Promise<void> {
   const next = connectionQueue.then(operation, operation);
@@ -407,7 +428,10 @@ export function connectServer(
   environment: string,
   connType: ConnTypeIds
 ): Promise<void> {
+  const generation = ++connectionGeneration;
+  pendingAuthentication = undefined;
   return queueConnection(async () => {
+    if (generation !== connectionGeneration) return;
     const current = ServersConfig.getCurrentServer();
     if (current && current.id === serverItem.id && current.environment === environment) {
       vscode.window.showInformationMessage(
@@ -428,7 +452,9 @@ export function connectServer(
       },
       async (progress) => {
         progress.report({ increment: 0 });
-        await doConnect(serverItem, environment, connType);
+        if (generation === connectionGeneration) {
+          await doConnect(serverItem, environment, connType, generation);
+        }
         progress.report({ increment: 100 });
       }
     );
@@ -439,12 +465,21 @@ export function authenticate(
   serverItem: ServerItem,
   environment: string,
   username: string,
-  password: string
+  password: string,
+  generation: number
 ): Promise<void> {
   const encoding: string =
     vscode.env.language === "ru" ? ENABLE_CODE_PAGE.CP1251 : ENABLE_CODE_PAGE.CP1252;
 
   return queueConnection(async () => {
+    if (generation !== connectionGeneration ||
+        pendingAuthentication?.generation !== generation ||
+        pendingAuthentication.serverId !== serverItem.id ||
+        pendingAuthentication.environment !== environment ||
+        pendingAuthentication.token !== serverItem.token) {
+      return; // An older login prompt must not authenticate a newer session.
+    }
+
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Window,
@@ -453,9 +488,11 @@ export function authenticate(
       async (progress) => {
         progress.report({ increment: 0 });
         const result = await sendAuthenticateRequest(serverItem, environment, username, password, encoding);
+        if (generation !== connectionGeneration) return;
         if (!result.sucess || !result.token) {
           throw new Error(vscode.l10n.t("Server authentication failed."));
         }
+        pendingAuthentication = undefined;
         serverItem.username = username;
         doFinishConnectProcess(serverItem, result.token, environment);
         progress.report({ increment: 100 });
@@ -490,7 +527,10 @@ export function reconnectServer(
   environment: string,
   connType: ConnTypeIds
 ): Promise<void> {
+  const generation = ++connectionGeneration;
+  pendingAuthentication = undefined;
   return queueConnection(async () => {
+    if (generation !== connectionGeneration) return;
     const previous = serverProvider.connectedServerItem;
     // Reconnect uses the saved token: disconnecting the same session first could
     // invalidate that token. Disconnect only when switching servers/environments.
@@ -507,11 +547,15 @@ export function reconnectServer(
         progress.report({ increment: 0 });
         try {
           const reconnected = await doReconnect(serverItem, environment, connType);
-          if (!reconnected) {
-            throw new Error(vscode.l10n.t("Saved session is invalid. Connect again using your credentials."));
+          if (!reconnected && generation === connectionGeneration) {
+            // An invalid token must not prevent a fresh connection.
+            ServersConfig.markConnectionLost();
+            await doConnect(serverItem, environment, connType, generation);
           }
         } catch (error) {
-          ServersConfig.markConnectionLost();
+          if (generation === connectionGeneration) {
+            ServersConfig.markConnectionLost();
+          }
           throw error;
         } finally {
           progress.report({ increment: 100 });
@@ -591,15 +635,18 @@ async function doValidation(
 async function doConnect(
   serverItem: ServerItem,
   environment: string,
-  connType: ConnTypeIds
+  connType: ConnTypeIds,
+  generation: number
 ): Promise<void> {
   const result = await sendConnectRequest(serverItem, environment, connType);
+  if (generation !== connectionGeneration) return;
   if (!result.sucess) {
     throw new Error(vscode.l10n.t("The server refused the connection."));
   }
   if (result.needAuthentication) {
     serverItem.token = result.token;
-    inputAuthenticationParameters(serverItem, environment);
+    pendingAuthentication = { generation, serverId: serverItem.id, environment, token: result.token };
+    void inputAuthenticationParameters(serverItem, environment, generation);
   } else {
     doFinishConnectProcess(serverItem, result.token, environment);
   }

@@ -120,13 +120,6 @@ export function sendDisconnectRequest(
             needAuthentication: connectedServerItem.secure === 1,
           };
         }
-      },
-      (err: ResponseError<object>) => {
-        return {
-          sucess: false,
-          token: "",
-          needAuthentication: connectedServerItem.secure === 1,
-        };
       }
     );
 }

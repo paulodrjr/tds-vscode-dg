@@ -10,7 +10,7 @@ import {
 } from "vscode-languageclient/node";
 
 import { chmodSync, statSync } from "fs";
-import { reconnectLastServer } from "./serversView";
+import { reconnectLastServer, invalidateConnectionAttempts } from "./serversView";
 import { ServersConfig } from "./utils";
 import { resetBuildCommands } from "./extension";
 import { TotvsLanguageClientA } from "./TotvsLanguageClientA";
@@ -145,6 +145,7 @@ export function getLanguageClient(
   context.subscriptions.push(languageClient.onDidChangeState(({ oldState, newState }) => {
     if (newState === State.Stopped || (oldState === State.Running && newState !== State.Running)) {
       languageClient.ready = false;
+      invalidateConnectionAttempts();
       ServersConfig.markConnectionLost();
       resetBuildCommands();
     } else if (newState === State.Running && initialStartFinished) {

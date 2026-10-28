@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ServersConfig } from "./utils";
 import { MultiStepInput } from "./multiStepInput";
-import { authenticate } from "./serversView";
+import { authenticate, cancelAuthentication } from "./serversView";
 import { ServerItem } from "./serverItem";
 
 /**
@@ -14,7 +14,8 @@ import { ServerItem } from "./serverItem";
  */
 export async function inputAuthenticationParameters(
   serverItem: ServerItem,
-  environment: string
+  environment: string,
+  generation: number
 ) {
   //const VALIDADE_TIME_OUT = 1000;
   const title = vscode.l10n.t("Authentication");
@@ -80,11 +81,8 @@ export async function inputAuthenticationParameters(
     });
   }
 
-  function shouldResume() {
-    // Could show a notification with the option to resume.
-    return new Promise<boolean>((resolve, reject) => {
-      return false;
-    });
+  function shouldResume(): Promise<boolean> {
+    return Promise.resolve(false);
   }
 
   async function allTrueValue(value: string) {
@@ -104,14 +102,21 @@ export async function inputAuthenticationParameters(
   }
 
   async function main() {
-    const authState = await collectAuthenticationInputs();
-    authenticate(
-      serverItem,
-      environment,
-      authState.username,
-      authState.password
-    );
+    try {
+      const authState = await collectAuthenticationInputs();
+      if (!authState.username || typeof authState.password !== "string") {
+        await cancelAuthentication(serverItem, generation);
+        return;
+      }
+      await authenticate(
+        serverItem, environment, authState.username, authState.password, generation
+      );
+    } catch (error) {
+      await cancelAuthentication(serverItem, generation);
+      const message = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage("Authentication failed: " + message);
+    }
   }
 
-  main();
+  await main();
 }
