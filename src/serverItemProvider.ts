@@ -62,6 +62,15 @@ class ServerItemProvider
     return this._connectedServerItem;
   }
 
+  // Unlike the public setter, this does not clear the last connected server:
+  // it is used after a Language Server restart to allow session recovery.
+  public invalidateConnection(): void {
+    if (this._connectedServerItem !== undefined) {
+      this._connectedServerItem = undefined;
+      this.refresh();
+    }
+  }
+
   public set connectedServerItem(server: ServerItem) {
     if (this._connectedServerItem !== server) {
       this._connectedServerItem = server;

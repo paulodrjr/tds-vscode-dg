@@ -434,31 +434,46 @@ export class ServersConfig {
     username: string
   ) {
     const servers = getServersConfig();
+    const selected = servers.configurations.find((element) => element.id === id);
+    if (!selected) {
+      throw new Error("Selected server was not found in servers.json.");
+    }
 
-    servers.configurations.forEach(async (element) => {
-      if (element.id === id) {
-        if (element.environments === undefined) {
-          element.environments = [environment];
-        } else if (element.environments.indexOf(environment) === -1) {
-          element.environments.push(environment);
-        }
+    if (!selected.environments) {
+      selected.environments = [environment];
+    } else if (selected.environments.indexOf(environment) === -1) {
+      selected.environments.push(environment);
+    }
 
-        element.username = username;
-        element.environment = environment;
-        element.token = token;
+    selected.username = username;
+    selected.environment = environment;
+    selected.token = token;
+    servers.connectedServer = selected;
+    servers.lastConnectedServer = selected.id;
 
-        servers.connectedServer = element;
-        servers.lastConnectedServer = element.id;
+    // Connection is established at this point; a secondary information request
+    // must not delay the selection indicator or overwrite a newer connection.
+    persistServersInfo(servers);
+    this._onDidSelectedServer.fire(selected);
+
+    void doUpdateInformations(selected).then((information: any) => {
+      const latest = getServersConfig();
+      if (latest.connectedServer?.id !== id || latest.connectedServer?.token !== token) {
+        return; // A more recent connection replaced this one.
       }
-    });
-
-    doUpdateInformations(servers.connectedServer).then((value: /*IServerInformations*/any) => {
-      servers.connectedServer.informations = value;
-
-      persistServersInfo(servers);
-      this._onDidSelectedServer.fire(servers.connectedServer);
+      const stored = latest.configurations.find((element) => element.id === id);
+      if (stored) {
+        stored.informations = information;
+        latest.connectedServer = stored;
+      }
+      persistServersInfo(latest);
+      this._onDidSelectedServer.fire(latest.connectedServer);
+    }).catch((error: any) => {
+      console.error("Unable to retrieve server information:", error);
     });
   }
+
+
 
   /**
    * Salva informação de environment e username de um servidor.
@@ -502,30 +517,21 @@ export class ServersConfig {
    */
   static saveConnectionToken(id: string, token: string, environment: string) {
     const servers = getServersConfig();
-
-    if (!servers.savedTokens) {
-      let emptySavedTokens: Array<[string, object]> = [];
-      servers.savedTokens = emptySavedTokens;
-    } else {
-      let found: boolean = false;
-      let key = id + ":" + environment;
-      if (servers.savedTokens) {
-        servers.savedTokens.forEach((element) => {
-          if (element[0] === key) {
-            found = true; // update token
-            element[1] = { id: id, token: token };
-          }
-        });
-      }
-      if (!found) {
-        servers.savedTokens.push([key, { id: id, token: token }]);
-      } else {
-        servers.savedTokens[key] = { id: id, token: token };
-      }
-
-      persistServersInfo(servers);
+    if (!Array.isArray(servers.savedTokens)) {
+      servers.savedTokens = [];
     }
+
+    const key = id + ":" + environment;
+    const entry = servers.savedTokens.find((element) => element[0] === key);
+    if (entry) {
+      entry[1] = { id, token };
+    } else {
+      servers.savedTokens.push([key, { id, token }]);
+    }
+    persistServersInfo(servers);
   }
+
+
 
   /**
    * Remove o token salvo do servidor/environment.
@@ -572,6 +578,21 @@ export class ServersConfig {
     allConfigs.connectedServer = {};
     allConfigs.lastConnectedServer = "";
     persistServersInfo(allConfigs);
+    this._onDidSelectedServer.fire(undefined);
+  }
+
+  // A transport failure invalidates the active session without discarding
+  // lastConnectedServer or saved tokens; the language client can reattach.
+  static markConnectionLost(connectionToken?: string): void {
+    const servers = getServersConfig();
+    if (!servers.connectedServer?.id) {
+      return;
+    }
+    if (connectionToken && servers.connectedServer.token !== connectionToken) {
+      return;
+    }
+    servers.connectedServer = {};
+    persistServersInfo(servers);
     this._onDidSelectedServer.fire(undefined);
   }
 

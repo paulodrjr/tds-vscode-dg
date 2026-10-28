@@ -441,9 +441,13 @@ export function activate(context: ExtensionContext) {
   //Mostra a pagina de Welcome.
   showWelcomePage(context, false);
 
-  ServersConfig.onDidSelectedServer((newServer: ServerItem) => {
-    serverProvider.connectedServerItem = newServer;
-  })
+  context.subscriptions.push(ServersConfig.onDidSelectedServer((newServer: ServerItem | undefined) => {
+    if (newServer) {
+      serverProvider.connectedServerItem = newServer;
+    } else {
+      serverProvider.invalidateConnection();
+    }
+  }));
   serverProvider.checkServersConfigListener(true);
 
   //Abre uma caixa de informações para login no servidor protheus selecionado.
@@ -708,6 +712,12 @@ function showBanner(force: boolean = false) {
 }
 
 let canBuild: boolean = true;
+
+// The old request cannot finish when the Language Server transport has died.
+export function resetBuildCommands(): void {
+  canBuild = true;
+  void vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", true);
+}
 
 export function blockBuildCommands(block: boolean): boolean {
   if (!canBuild && block) {

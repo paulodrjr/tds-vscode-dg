@@ -145,7 +145,7 @@ function buildServerTooltip(server: ServerItem) {
 
   if (error.length == 0) {
     const group = (title: string, target: string): string => {
-      const list: string[] = permissions[target];
+      const list: string[] = permissions[target] || [];
 
       return list.length == 0
         ? ""

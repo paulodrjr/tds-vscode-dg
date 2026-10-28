@@ -173,9 +173,6 @@ export function sendConnectRequest(
         } else {
           return { sucess: false, token: "", needAuthentication: false };
         }
-      },
-      (err: ResponseError<object>) => {
-        return { sucess: false, token: "", needAuthentication: false };
       }
     );
 }
@@ -210,9 +207,6 @@ export function sendAuthenticateRequest(
         } else {
           return { sucess: false, token: token };
         }
-      },
-      (err: ResponseError<object>) => {
-        return { sucess: false, token: "" };
       }
     );
 }
@@ -243,9 +237,6 @@ export function sendReconnectRequest(
         } else {
           return { sucess: false, environment: "", user: "", token: "" };
         }
-      },
-      (error: any) => {
-        return { sucess: false, environment: "", user: "", token: "" };
       }
     );
 }

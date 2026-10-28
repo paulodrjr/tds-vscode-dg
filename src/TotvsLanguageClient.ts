@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import {
   LanguageClientOptions,
-  RevealOutputChannelOn
+  RevealOutputChannelOn,
+  State
 } from "vscode-languageclient";
 
 import {
@@ -10,6 +11,8 @@ import {
 
 import { chmodSync, statSync } from "fs";
 import { reconnectLastServer } from "./serversView";
+import { ServersConfig } from "./utils";
+import { resetBuildCommands } from "./extension";
 import { TotvsLanguageClientA } from "./TotvsLanguageClientA";
 import { IServerNotificationInfo, IUsageStatusInfo } from './protocolMessages';
 import { updateUsageBarItem } from "./statusBar";
@@ -138,8 +141,24 @@ export function getLanguageClient(
       });
     });
 
+  let initialStartFinished = false;
+  context.subscriptions.push(languageClient.onDidChangeState(({ oldState, newState }) => {
+    if (newState === State.Stopped || (oldState === State.Running && newState !== State.Running)) {
+      languageClient.ready = false;
+      ServersConfig.markConnectionLost();
+      resetBuildCommands();
+    } else if (newState === State.Running && initialStartFinished) {
+      // The LSP process restarted; its previous remote session is not trusted.
+      languageClient.ready = true;
+      if (config.get("reconnectLastServer")) {
+        void reconnectLastServer();
+      }
+    }
+  }));
+
   languageClient.start()
     .then(async (disposable: any) => {
+      initialStartFinished = true;
       context.subscriptions.push(disposable);
       languageClient.ready = true;
 

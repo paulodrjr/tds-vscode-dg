@@ -389,35 +389,49 @@ function runCommandUpdateMonitor() {
   executeCommand("_totvs-developer-studio.updateMonitorPanel");
 }
 
+// Keep connection changes ordered so a delayed disconnect cannot clear a new session.
+let connectionQueue: Promise<void> = Promise.resolve();
+
+function queueConnection(operation: () => Promise<void>): Promise<void> {
+  const next = connectionQueue.then(operation, operation);
+  connectionQueue = next.catch((error: any) => {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(vscode.l10n.t("Server connection failed: {0}", message));
+  });
+  return connectionQueue;
+}
+
 export function connectServer(
   serverItem: ServerItem,
   environment: string,
   connType: ConnTypeIds
-) {
-  if (serverItem.isConnected && serverItem.environment === environment) {
-    vscode.window.showInformationMessage(
-      vscode.l10n.t("The server selected is already connected.")
-    );
-  } else {
-    if (serverProvider.connectedServerItem !== undefined) {
-      vscode.commands.executeCommand(
-        "totvs-developer-studio.disconnect",
-        serverProvider.connectedServerItem
+): Promise<void> {
+  return queueConnection(async () => {
+    const current = ServersConfig.getCurrentServer();
+    if (current && current.id === serverItem.id && current.environment === environment) {
+      vscode.window.showInformationMessage(
+        vscode.l10n.t("The server selected is already connected.")
       );
+      return;
     }
 
-    vscode.window.withProgress(
+    const previous = serverProvider.connectedServerItem;
+    if (previous) {
+      await doDisconnect(previous);
+    }
+
+    await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Window,
         title: vscode.l10n.t("Connecting to the server {0}", serverItem.name),
       },
-      async (progress, token) => {
+      async (progress) => {
         progress.report({ increment: 0 });
         await doConnect(serverItem, environment, connType);
         progress.report({ increment: 100 });
       }
     );
-  }
+  });
 }
 
 export function authenticate(
@@ -425,45 +439,28 @@ export function authenticate(
   environment: string,
   username: string,
   password: string
-) {
-  const enconding: string =
-    vscode.env.language === "ru"
-      ? ENABLE_CODE_PAGE.CP1251
-      : ENABLE_CODE_PAGE.CP1252;
+): Promise<void> {
+  const encoding: string =
+    vscode.env.language === "ru" ? ENABLE_CODE_PAGE.CP1251 : ENABLE_CODE_PAGE.CP1252;
 
-  vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Window,
-      title: vscode.l10n.t("Authenticating user [{0}] in server [{1}]", username, serverItem.name),
-    },
-    async (progress, token) => {
-      progress.report({ increment: 0 });
-      await sendAuthenticateRequest(
-        serverItem,
-        environment,
-        username,
-        password,
-        enconding
-      )
-        .then(
-          (result: IAuthenticationInfo) => {
-            let token: string = result.token;
-            return result.sucess ? token : "";
-          },
-          (error: any) => {
-            vscode.window.showErrorMessage(error);
-          }
-        )
-        .then((token: string) => {
-          if (token) {
-            serverItem.username = username;
-            doFinishConnectProcess(serverItem, token, environment);
-          }
-        });
-
-      progress.report({ increment: 100 });
-    }
-  );
+  return queueConnection(async () => {
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Window,
+        title: vscode.l10n.t("Authenticating user [{0}] in server [{1}]", username, serverItem.name),
+      },
+      async (progress) => {
+        progress.report({ increment: 0 });
+        const result = await sendAuthenticateRequest(serverItem, environment, username, password, encoding);
+        if (!result.sucess || !result.token) {
+          throw new Error(vscode.l10n.t("Server authentication failed."));
+        }
+        serverItem.username = username;
+        doFinishConnectProcess(serverItem, result.token, environment);
+        progress.report({ increment: 100 });
+      }
+    );
+  });
 }
 
 function doReconnect(
@@ -491,28 +488,36 @@ export function reconnectServer(
   serverItem: ServerItem,
   environment: string,
   connType: ConnTypeIds
-) {
-  const connectedServerItem = serverProvider.connectedServerItem;
-
-  if (connectedServerItem !== undefined) {
-    async () =>
-      await vscode.commands.executeCommand(
-        "totvs-developer-studio.disconnect",
-        connectedServerItem
-      );
-  }
-
-  vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Window,
-      title: vscode.l10n.t("Reconnecting to the server {0}", serverItem.name),
-    },
-    async (progress, token) => {
-      progress.report({ increment: 0 });
-      await doReconnect(serverItem, environment, connType);
-      progress.report({ increment: 100 });
+): Promise<void> {
+  return queueConnection(async () => {
+    const previous = serverProvider.connectedServerItem;
+    // Reconnect uses the saved token: disconnecting the same session first could
+    // invalidate that token. Disconnect only when switching servers/environments.
+    if (previous && (previous.id !== serverItem.id || previous.environment !== environment)) {
+      await doDisconnect(previous);
     }
-  );
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Window,
+        title: vscode.l10n.t("Reconnecting to the server {0}", serverItem.name),
+      },
+      async (progress) => {
+        progress.report({ increment: 0 });
+        try {
+          const reconnected = await doReconnect(serverItem, environment, connType);
+          if (!reconnected) {
+            throw new Error(vscode.l10n.t("Saved session is invalid. Connect again using your credentials."));
+          }
+        } catch (error) {
+          ServersConfig.markConnectionLost();
+          throw error;
+        } finally {
+          progress.report({ increment: 100 });
+        }
+      }
+    );
+  });
 }
 
 export function reconnectLastServer() {
@@ -535,20 +540,21 @@ function handleError(nodeError: NodeError) {
   vscode.window.showErrorMessage(nodeError.code + ": " + nodeError.message);
 }
 
-async function doDisconnect(serverItem: ServerItem) {
-  await sendDisconnectRequest(serverItem).then(
-    (ti: ITokenInfo) => {
-      if (!ti.sucess) {
-        serverProvider.connectedServerItem = undefined;
-      }
-
-      executeCommand("_totvs-developer-studio.clearMonitorPanel");
-    },
-    (err: ResponseError<object>) => {
-      serverProvider.connectedServerItem = undefined;
-      handleError(err);
+async function doDisconnect(serverItem: ServerItem): Promise<void> {
+  try {
+    await sendDisconnectRequest(serverItem);
+  } catch (error: any) {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showWarningMessage(vscode.l10n.t("Unable to confirm remote disconnect: {0}", message));
+  } finally {
+    // The local session is disconnected regardless of the remote response.
+    // Avoid invalidating another session if a late response arrives.
+    const current = ServersConfig.getCurrentServer();
+    if (current && current.id === serverItem.id) {
+      ServersConfig.clearConnectedServerConfig();
     }
-  );
+    await executeCommand("_totvs-developer-studio.clearMonitorPanel");
+  }
 }
 
 async function doValidation(
@@ -585,23 +591,17 @@ async function doConnect(
   serverItem: ServerItem,
   environment: string,
   connType: ConnTypeIds
-) {
-  await sendConnectRequest(serverItem, environment, connType).then(
-    (result: ITokenInfo) => {
-      if (result.sucess) {
-        if (result.needAuthentication) {
-          serverItem.token = result.token;
-          inputAuthenticationParameters(serverItem, environment);
-        } else {
-          doFinishConnectProcess(serverItem, result.token, environment);
-        }
-      }
-      return result.sucess;
-    },
-    (error) => {
-      vscode.window.showErrorMessage(error);
-    }
-  );
+): Promise<void> {
+  const result = await sendConnectRequest(serverItem, environment, connType);
+  if (!result.sucess) {
+    throw new Error(vscode.l10n.t("The server refused the connection."));
+  }
+  if (result.needAuthentication) {
+    serverItem.token = result.token;
+    inputAuthenticationParameters(serverItem, environment);
+  } else {
+    doFinishConnectProcess(serverItem, result.token, environment);
+  }
 }
 
 export function createNewProtheusServer(
