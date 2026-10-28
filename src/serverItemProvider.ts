@@ -34,6 +34,7 @@ class ServerItemProvider
 
   private configFilePath: string = "";
   private configWatcher: fs.FSWatcher | undefined;
+  private configListener: vscode.Disposable | undefined;
 
   constructor() {
     // check if there is an open folder
@@ -50,10 +51,17 @@ class ServerItemProvider
       }
     });
 
-    vscode.workspace.onDidChangeConfiguration(() => {
-    this.checkServersConfigListener(true);
+    this.configListener = vscode.workspace.onDidChangeConfiguration(() => {
+      this.checkServersConfigListener(true);
     });
 
+  }
+
+  dispose(): void {
+    this.configWatcher?.close();
+    this.configWatcher = undefined;
+    this.configListener?.dispose();
+    this._onDidChangeTreeData.dispose();
   }
 
   refresh(element?: ServerItem): void {
@@ -105,58 +113,14 @@ class ServerItemProvider
 
   getChildren(element?: ServerItem): Thenable<ServerItem[] | EnvSection[]> {
     if (element) {
-      if (element.environments) {
-        return Promise.resolve(element.environments);
-      } else {
-        const listOfEnvironments = ServersConfig.getServerById(element.id).environments;
-        if (listOfEnvironments.size > 0) {
-          this.localServerItems[element.id].environments =
-            listOfEnvironments.map(
-              (env) =>
-                new EnvSection(
-                  env,
-                  element,
-                )
-            );
-          this.localServerItems[element.id].collapsibleState =
-            vscode.TreeItemCollapsibleState.Expanded;
-          //Workaround: Bug que nao muda visualmente o collapsibleState se o label permanecer intalterado
-          this.localServerItems[element.id].label = this.localServerItems[
-            element.id
-          ].label.endsWith(" ")
-            ? this.localServerItems[element.id].label.trim()
-            : this.localServerItems[element.id].label + " ";
-          element.environments = listOfEnvironments;
-
-          Promise.resolve(
-            new EnvSection(
-              element.name,
-              element,
-            )
-          );
-        } else {
-          return Promise.resolve([]);
-        }
-      }
-    } else {
-      if (!this.localServerItems) {
-        this.localServerItems = this.setConfigWithServerConfig();
-      }
+      return Promise.resolve(element.environments || []);
     }
 
-    return Promise.resolve(
-      this.localServerItems.sort((srv1, srv2) => {
-        const label1 = srv1.name.toLowerCase();
-        const label2 = srv2.name.toLowerCase();
-        if (label1 > label2) {
-          return 1;
-        }
-        if (label1 < label2) {
-          return -1;
-        }
-        return 0;
-      })
-    );
+    if (!this.localServerItems) {
+      this.localServerItems = this.setConfigWithServerConfig();
+    }
+    return Promise.resolve([...this.localServerItems].sort((left, right) =>
+      left.name.localeCompare(right.name)));
   }
 
   checkServersConfigListener(refresh: boolean): void {

@@ -313,6 +313,7 @@ export function activate(context: ExtensionContext) {
   );
 
   //View
+  context.subscriptions.push(serverProvider);
   let viewServer = new ServersExplorer(context);
   if (!viewServer) {
     console.error("Servers view not initialized.");

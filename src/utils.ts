@@ -1159,6 +1159,10 @@ function getServersConfig() {
     ServersConfig.initializeServerConfigFile(serversJson);
   }
   let json = fs.readFileSync(serversJson).toString();
+  if (!json.trim()) {
+    throw new Error("Empty servers.json: " + serversJson +
+      ". Existing server configuration will not be overwritten.");
+  }
 
   if (json) {
     try {
@@ -1172,6 +1176,10 @@ function getServersConfig() {
         (e instanceof Error ? e.message : String(e))
       );
     }
+  }
+
+  if (!Array.isArray(config.configurations)) {
+    throw new Error("Invalid servers.json: configurations must be an array. Existing settings were not modified.");
   }
 
   //garante a existencia de sessões criticas

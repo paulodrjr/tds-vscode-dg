@@ -153,8 +153,7 @@ export class ServersExplorer {
     const options: vscode.TreeViewOptions<ServerItem | EnvSection> = {
       treeDataProvider: serverProvider,
     };
-    vscode.window.createTreeView("totvs_server", options);
-    vscode.window.registerTreeDataProvider("totvs_server", serverProvider);
+    context.subscriptions.push(vscode.window.createTreeView("totvs_server", options));
 
     vscode.commands.registerCommand(
       "totvs-developer-studio.connect",
