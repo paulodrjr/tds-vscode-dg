@@ -1117,7 +1117,13 @@ function getServersConfig() {
     try {
       config = JSON.parse(stripJsonComments(json));
     } catch (e) {
-      config = sampleServer();
+      // Never replace damaged server settings with an empty configuration:
+      // an unrelated update could otherwise overwrite the user's servers.
+      throw new Error(
+        "Invalid servers.json at " + serversJson +
+        ". The file has not been modified. Restore a valid JSON before proceeding. " +
+        (e instanceof Error ? e.message : String(e))
+      );
     }
   }
 
@@ -1537,36 +1543,36 @@ export function groupBy<T, K>(list: T[], getKey: (item: T) => K) {
 
 //TODO: pegar a lista de arquivos a ignorar da configuração
 const ignoreListExpressions: Array<RegExp> = [];
-ignoreListExpressions.push(/(.*)?(\.vscode)$/gi); //.vscode
+ignoreListExpressions.push(/(.*)?(\.vscode)$/i); //.vscode
 //ignoreListExpressions.push(/(\.)$/ig); // sem extensão (não é possivel determinar se é fonte ou recurso)
-ignoreListExpressions.push(/(.+)(\.erx_)$/gi); // arquivos de definição e trabalho
-ignoreListExpressions.push(/(.+)(\.ppx_)$/gi); // arquivos de definição e trabalho
-ignoreListExpressions.push(/(.+)(\.err)$/gi); // arquivos de definição e trabalho
+ignoreListExpressions.push(/(.+)(\.erx_)$/i); // arquivos de definição e trabalho
+ignoreListExpressions.push(/(.+)(\.ppx_)$/i); // arquivos de definição e trabalho
+ignoreListExpressions.push(/(.+)(\.err)$/i); // arquivos de definição e trabalho
 
 //lista de arquivos/pastas normalmente ignorados
-ignoreListExpressions.push(/(.*)?(#.*#)$/gi);
-ignoreListExpressions.push(/(.*)?(\.#*)$/gi);
-ignoreListExpressions.push(/(.*)?(%.*%)$/gi);
-ignoreListExpressions.push(/(.*)?(\._.*)$/gi);
-ignoreListExpressions.push(/(.*)?(CVS)$/gi);
-ignoreListExpressions.push(/(.*)?.*(CVS)$/gi);
-ignoreListExpressions.push(/(.*)?(\.cvsignore)$/gi);
-ignoreListExpressions.push(/(.*)?(SCCS)$/gi);
-ignoreListExpressions.push(/(.*)?.*\/SCCS\/.*$/gi);
-ignoreListExpressions.push(/(.*)?(vssver\.scc)$/gi);
-ignoreListExpressions.push(/(.*)?(\.svn)$/gi);
-ignoreListExpressions.push(/(.*)?(\.DS_Store)$/gi);
-ignoreListExpressions.push(/(.*)?(\.git)$/gi);
-ignoreListExpressions.push(/(.*)?(\.gitattributes)$/gi);
-ignoreListExpressions.push(/(.*)?(\.gitignore)$/gi);
-ignoreListExpressions.push(/(.*)?(\.gitmodules)$/gi);
-ignoreListExpressions.push(/(.*)?(\.hg)$/gi);
-ignoreListExpressions.push(/(.*)?(\.hgignore)$/gi);
-ignoreListExpressions.push(/(.*)?(\.hgsub)$/gi);
-ignoreListExpressions.push(/(.*)?(\.hgsubstate)$/gi);
-ignoreListExpressions.push(/(.*)?(\.hgtags)$/gi);
-ignoreListExpressions.push(/(.*)?(\.bzr)$/gi);
-ignoreListExpressions.push(/(.*)?(\.bzrignore)$/gi);
+ignoreListExpressions.push(/(.*)?(#.*#)$/i);
+ignoreListExpressions.push(/(.*)?(\.#*)$/i);
+ignoreListExpressions.push(/(.*)?(%.*%)$/i);
+ignoreListExpressions.push(/(.*)?(\._.*)$/i);
+ignoreListExpressions.push(/(.*)?(CVS)$/i);
+ignoreListExpressions.push(/(.*)?.*(CVS)$/i);
+ignoreListExpressions.push(/(.*)?(\.cvsignore)$/i);
+ignoreListExpressions.push(/(.*)?(SCCS)$/i);
+ignoreListExpressions.push(/(.*)?.*\/SCCS\/.*$/i);
+ignoreListExpressions.push(/(.*)?(vssver\.scc)$/i);
+ignoreListExpressions.push(/(.*)?(\.svn)$/i);
+ignoreListExpressions.push(/(.*)?(\.DS_Store)$/i);
+ignoreListExpressions.push(/(.*)?(\.git)$/i);
+ignoreListExpressions.push(/(.*)?(\.gitattributes)$/i);
+ignoreListExpressions.push(/(.*)?(\.gitignore)$/i);
+ignoreListExpressions.push(/(.*)?(\.gitmodules)$/i);
+ignoreListExpressions.push(/(.*)?(\.hg)$/i);
+ignoreListExpressions.push(/(.*)?(\.hgignore)$/i);
+ignoreListExpressions.push(/(.*)?(\.hgsub)$/i);
+ignoreListExpressions.push(/(.*)?(\.hgsubstate)$/i);
+ignoreListExpressions.push(/(.*)?(\.hgtags)$/i);
+ignoreListExpressions.push(/(.*)?(\.bzr)$/i);
+ignoreListExpressions.push(/(.*)?(\.bzrignore)$/i);
 
 function processIgnoreList(
   ignoreList: Array<RegExp>,

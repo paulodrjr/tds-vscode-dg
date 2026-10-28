@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { ExtensionContext } from 'vscode';
 import { LaunchConfig, ServersConfig } from '../utils';
-import * as zlib from 'zlib';
+import JSZip = require('jszip');
+import * as path from 'path';
 import * as fs from 'fs';
 import * as tmp from 'tmp';
 
@@ -81,25 +82,39 @@ export function onCaptureLoggers(context: ExtensionContext) {
 
 }
 
-export function offCaptureLoggers() {
-	if (logFile) {
-		const gzip = zlib.createGzip();
-		const input = fs.createReadStream(logFile);
+export async function offCaptureLoggers(): Promise<void> {
+  if (!logFile) {
+    vscode.window.showErrorMessage(vscode.l10n.t("First start logging"));
+    return;
+  }
 
-		let filePathZip: string = vscode.workspace.rootPath + '\\tdsSupport.zip';
+  const currentLog = logFile;
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage("Open a workspace folder before exporting TDS support logs.");
+    return;
+  }
 
-		if (fs.existsSync(filePathZip)) {
-			filePathZip = vscode.workspace.rootPath + '\\tdsSupport' + Date.now() + '.zip';
-		}
+  const zipPath = path.join(
+    workspaceFolder,
+    fs.existsSync(path.join(workspaceFolder, "tdsSupport.zip"))
+      ? "tdsSupport" + Date.now() + ".zip"
+      : "tdsSupport.zip"
+  );
 
-		const output = fs.createWriteStream(filePathZip);
-		input.pipe(gzip).pipe(output);
-
-		logStatusBarItem.hide();
-
-		vscode.window.showInformationMessage(vscode.l10n.t("Log file successfully generated in") + filePathZip);
-		logFile = "";
-	} else {
-		vscode.window.showErrorMessage(vscode.l10n.t("First start logging"));
-	}
+  try {
+    const archive = new JSZip();
+    archive.file(path.basename(currentLog), await fs.promises.readFile(currentLog));
+    const zipContent = await archive.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+    await fs.promises.writeFile(zipPath, zipContent);
+    logStatusBarItem?.hide();
+    logFile = "";
+    vscode.window.showInformationMessage(
+      vscode.l10n.t("Log file successfully generated in") + zipPath
+    );
+  } catch (error) {
+    // Preserve the capture for a second attempt if the output cannot be created.
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage("Unable to generate TDS support ZIP: " + message);
+  }
 }

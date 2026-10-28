@@ -34,7 +34,9 @@ export async function verifyEditorState(): Promise<ConfirmResult> {
 
 	return window.showWarningMessage(message, options, ...buttons).then(index => {
 		switch (index) {
-			case save || saveAll: return ConfirmResult.SAVE;
+			case save:
+      case saveAll:
+        return ConfirmResult.SAVE;
 			case dontSave: return ConfirmResult.DONT_SAVE;
 			default: return ConfirmResult.CANCEL;
 		}
