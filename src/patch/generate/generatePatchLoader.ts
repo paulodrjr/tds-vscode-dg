@@ -74,7 +74,7 @@ class GeneratePatchLoader {
   constructor(context: vscode.ExtensionContext, args: any) {
     this._context = context;
 
-    const ext = vscode.extensions.getExtension('paulodrjr.tds-vscode-dg');
+    const ext = vscode.extensions.getExtension('TOTVS.tds-vscode');
     this._panel = vscode.window.createWebviewPanel(
       'generatePathLoader',
       vscode.l10n.t('Generate Patch'),
@@ -296,7 +296,7 @@ class GeneratePatchLoader {
 
   private getWebviewContent(): string {
     // Local path to main script run in the webview
-    const ext = vscode.extensions.getExtension('paulodrjr.tds-vscode-dg');
+    const ext = vscode.extensions.getExtension('TOTVS.tds-vscode');
     const reactAppPathOnDisk = vscode.Uri.file(
       path.join(ext.extensionPath, 'out', 'webpack', 'GeneratePatchPanel.js')
     );

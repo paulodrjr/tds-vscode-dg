@@ -16,7 +16,7 @@ const fs = require("fs");
  */
 export class TotvsConfigurationTdsReplayProvider
   implements DebugConfigurationProvider {
-  static _TYPE = "tds_dg_tdsreplay_debug";
+  static _TYPE = "totvs_tdsreplay_debug";
 
   /**
    * Massage a debug configuration just before a debug session is being launched,

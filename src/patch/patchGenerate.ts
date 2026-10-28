@@ -35,7 +35,7 @@ export function patchGenerate(context: vscode.ExtensionContext) {
   const server = ServersConfig.getCurrentServer();
   let extensionPath = "";
   if (!context || context === undefined) {
-    let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
+    let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
     if (ext) {
       extensionPath = ext.extensionPath;
     }
@@ -44,7 +44,7 @@ export function patchGenerate(context: vscode.ExtensionContext) {
   }
   if (server) {
     const currentPanel = vscode.window.createWebviewPanel(
-      "tds-vscode-dg.patchGenerate.fromRPO",
+      "totvs-developer-studio.patchGenerate.fromRPO",
       "Patch Generate",
       vscode.ViewColumn.One,
       {

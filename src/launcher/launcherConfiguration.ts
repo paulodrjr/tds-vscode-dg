@@ -41,7 +41,7 @@ const localizeHTML = {
 };
 
 const debugLaunchInfo: any = {
-  type: "tds_dg_language_debug",
+  type: "totvs_language_debug",
   request: "launch",
   cwb: "${workspaceRoot}",
   name: "",
@@ -55,7 +55,7 @@ export default class LauncherConfiguration {
       //addLaunchJsonListener();
 
       currentPanel = vscode.window.createWebviewPanel(
-        "tds-vscode-dg.configure.launcher",
+        "totvs-developer-studio.configure.launcher",
         vscode.l10n.t("Launcher Configuration"),
         vscode.ViewColumn.One,
         {

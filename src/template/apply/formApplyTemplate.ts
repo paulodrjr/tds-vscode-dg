@@ -23,7 +23,7 @@ export function openTemplateApplyView(
   if (server) {
     let extensionPath = "";
     if (!context || context === undefined) {
-      let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
+      let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
       if (ext) {
         extensionPath = ext.extensionPath;
       }
@@ -32,7 +32,7 @@ export function openTemplateApplyView(
     }
     if (!currentPanel) {
       currentPanel = vscode.window.createWebviewPanel(
-        "tds-vscode-dg.template.apply",
+        "totvs-developer-studio.template.apply",
         "Apply Template",
         vscode.ViewColumn.One,
         {

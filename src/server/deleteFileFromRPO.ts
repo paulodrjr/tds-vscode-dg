@@ -23,7 +23,7 @@ export function deleteFileFromRPO(context: any, selectedFiles): void {
 
 	if (context.contextValue === "serverItem") {
 		const currentPanel = window.createWebviewPanel(
-			'tds-vscode-dg.delete.file.fromRPO',
+			'totvs-developer-studio.delete.file.fromRPO',
 			vscode.l10n.t('Delete File From RPO'),
 			ViewColumn.One,
 			{
@@ -31,7 +31,7 @@ export function deleteFileFromRPO(context: any, selectedFiles): void {
 				retainContextWhenHidden: true
 			}
 		);
-		let ext = extensions.getExtension("paulodrjr.tds-vscode-dg");
+		let ext = extensions.getExtension("TOTVS.tds-vscode");
 		if (ext) {
 			currentPanel.webview.html = getWebViewContent(ext, localizeHTML);
 		}

@@ -7,7 +7,7 @@ import { ServerItem } from "../serverItem";
 export class TotvsConfigurationWebProvider
   extends TotvsConfigurationProvider
   implements DebugConfigurationProvider {
-  static _TYPE: string = "tds_dg_language_web_debug";
+  static _TYPE: string = "totvs_language_web_debug";
   static _NAME: string = "TOTVS Language Web Debug (SmartClient HTML)";
 
   protected initialize(config: DebugConfiguration) {

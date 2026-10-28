@@ -180,7 +180,7 @@ export class PatchEditorProvider
     );
   }
 
-  static readonly viewType = "tds.dg.patchView";
+  static readonly viewType = "tds.patchView";
 
   /**
    * Tracks all known webviews
@@ -278,7 +278,7 @@ export class PatchEditorProvider
    * Get the static HTML used for in our editor's webviews.
    */
   private getHtmlForWebview(webview: vscode.Webview): string {
-    const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
+    const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
     const extensionPath = ext.extensionPath;
 
     // Local path to main script run in the webview
