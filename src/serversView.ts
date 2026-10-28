@@ -213,17 +213,17 @@ export class ServersExplorer {
       "totvs-developer-studio.disconnect",
       (serverItem: ServerItem) => {
         if (serverItem.isConnected) {
-          vscode.window.withProgress(
+          return queueConnection(() => vscode.window.withProgress(
             {
               location: vscode.ProgressLocation.Window,
               title: vscode.l10n.t("Disconnecting from the server [{0}]", serverItem.name),
             },
-            async (progress, token) => {
+            async (progress) => {
               progress.report({ increment: 0 });
               await doDisconnect(serverItem);
               progress.report({ increment: 100 });
             }
-          );
+          ));
         } else {
           serverProvider.connectedServerItem = undefined;
         }

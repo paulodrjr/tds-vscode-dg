@@ -108,10 +108,12 @@ export function generatePpo(filePath: string, options?: any): Promise<string> {
         (response: CompileResult) => {
           blockBuildCommands(false);
 
+          let ppoFound = false;
           if (response.compileInfos.length > 0) {
             for (let index = 0; index < response.compileInfos.length; index++) {
               const compileInfo = response.compileInfos[index];
               if (compileInfo.status === "APPRE") {
+                ppoFound = true;
                 // o compileInfo.detail chega do LS com encoding utf8
                 // a extensão tds-vscode realiza a conversão para o enconding conforme informado em options.encoding
                 // caso nenhum encoding seja informado, converte para o padrão AdvPL cp1252
@@ -148,6 +150,9 @@ export function generatePpo(filePath: string, options?: any): Promise<string> {
               }
             }
           }
+          if (!ppoFound) {
+            reject(new Error("PPO not returned by the language server."));
+          }
         },
         (err: ResponseError<object>) => {
           blockBuildCommands(false);
@@ -155,6 +160,8 @@ export function generatePpo(filePath: string, options?: any): Promise<string> {
           reject(new Error(err.message));
         }
       );
+    } else {
+      reject(new Error("Compilation already in progress."));
     }
   });
 }
@@ -189,7 +196,7 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions) {
   const count = resourcesToConfirm.length;
 
   if (count !== 0) {
-    if (!vscode.workspace.saveAll(false)) {
+    if (!await vscode.workspace.saveAll(false)) {
       vscode.window.showWarningMessage(
         vscode.l10n.t("Operation canceled because it is not possible to save edited files.")
       );
