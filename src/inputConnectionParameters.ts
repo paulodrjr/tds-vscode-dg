@@ -130,12 +130,9 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
 		});
 	}
 
-	function shouldResume() {
-		// Could show a notification with the option to resume.
-		return new Promise<boolean>((resolve, reject) => {
-			return false;
-		});
-	}
+	function shouldResume(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
 
 	async function validateServerName(name: string) {
 		//await new Promise(resolve => setTimeout(resolve, VALIDADE_TIME_OUT));

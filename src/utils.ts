@@ -251,6 +251,53 @@ export default class Utils {
     return files;
   }
 
+  /** Non-blocking workspace traversal; avoids recursive stack growth and symlink loops. */
+  static async getAllFilesRecursiveAsync(
+    inputPaths: string[], checkCompileIgnore = false
+  ): Promise<string[]> {
+    const results: string[] = [];
+    const pending = [...inputPaths];
+    let examined = 0;
+    let unavailable = 0;
+
+    while (pending.length) {
+      const current = pending.pop();
+      try {
+        const stats = await fs.promises.lstat(current);
+        if (stats.isSymbolicLink()) continue;
+        if (stats.isDirectory()) {
+          if (checkCompileIgnore &&
+              fs.existsSync(path.join(current, ".tdscompileignore"))) {
+            continue;
+          }
+          const children = await fs.promises.readdir(current, { withFileTypes: true });
+          for (const child of children) {
+            if (!Utils.ignoreResource(child.name)) {
+              pending.push(path.join(current, child.name));
+            }
+          }
+        } else if (stats.isFile()) {
+          results.push(current);
+        }
+      } catch (error) {
+        unavailable++;
+        console.warn("Ignoring inaccessible compilation resource", current, error);
+      }
+
+      // Yield to the VS Code extension host for large workspaces.
+      if (++examined % 150 === 0) {
+        await new Promise<void>(resolve => setImmediate(resolve));
+      }
+    }
+
+    if (unavailable > 0) {
+      vscode.window.showWarningMessage(
+        "Skipped " + unavailable + " inaccessible resources during compilation discovery."
+      );
+    }
+    return results.sort((a, b) => a.localeCompare(b));
+  }
+
   static ignoreResource(fileName: string): boolean {
     return processIgnoreList(ignoreListExpressions, path.basename(fileName));
   }

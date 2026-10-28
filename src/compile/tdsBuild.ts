@@ -228,39 +228,37 @@ function verifyCompileResult(response) {
   }
 }
 
-export function commandBuildFile(
+export async function commandBuildFile(
   context: vscode.ExtensionContext,
   recompile: boolean,
   files
-) {
-  let editor: vscode.TextEditor | undefined;
-  let filename: string | undefined = undefined;
+): Promise<void> {
+  let filePaths: string[] = [];
 
-  if (context === undefined) {
-    //A ação veio pelo ctrl+f9
-    editor = vscode.window.activeTextEditor;
-    if (!editor) {
+  if (files) {
+    const sources = changeToArrayString(files);
+    filePaths = await Utils.getAllFilesRecursiveAsync(sources, true);
+  } else {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.scheme !== "file") {
       vscode.window.showInformationMessage(
         vscode.l10n.t("No editor is active, cannot find current file to build.")
       );
       return;
     }
-    filename = editor.document.uri.fsPath;
+    filePaths = [editor.document.uri.fsPath];
   }
 
-  let buildPromise: Promise<void> | undefined;
-  if (files) {
-    const paths = changeToArrayString(files);
-    buildPromise = buildFile(Utils.getAllFilesRecursive(paths, true), recompile);
-  } else if (filename !== undefined) {
-    buildPromise = buildFile([filename], recompile);
-  }
-  if (buildPromise) {
-    vscode.window.setStatusBarMessage(
-      `$(gear~spin) ${vscode.l10n.t("Building...")}`, buildPromise
-    );
+  if (!filePaths.length) {
+    vscode.window.showWarningMessage("There are no files to compile.");
+    return;
   }
 
+  const buildPromise = buildFile(filePaths, recompile);
+  vscode.window.setStatusBarMessage(
+    `$(gear~spin) ${vscode.l10n.t("Building...")}`, buildPromise
+  );
+  await buildPromise;
 }
 
 function changeToArrayString(allFiles) {
@@ -279,105 +277,46 @@ function changeToArrayString(allFiles) {
   return arrayFiles;
 }
 
-export function commandBuildWorkspace(recompile: boolean) {
-  if (vscode.workspace.workspaceFolders) {
-    let folders: string[] = [];
-
-    vscode.workspace.workspaceFolders.forEach((value) => {
-      folders.push(value.uri.fsPath);
-    });
-
-    let allFiles = Utils.getAllFilesRecursive(folders, true);
-
-    buildFile(allFiles, recompile);
-  }
-}
-
-export async function commandBuildOpenEditors(recompile: boolean) {
-  let delayNext = 250;
-  let files: string[] = [];
-  let filename: string | undefined = undefined;
-  let editor = vscode.window.activeTextEditor;
-  let nextEditor = editor;
-  if (!editor) {
-    vscode.window.showInformationMessage(
-      vscode.l10n.t("No editor is active, cannot find current file to build.")
-    );
+export async function commandBuildWorkspace(recompile: boolean): Promise<void> {
+  const folders = vscode.workspace.workspaceFolders?.map(value => value.uri.fsPath) || [];
+  if (!folders.length) {
+    vscode.window.showWarningMessage("Open a workspace folder before compiling.");
     return;
   }
-  if (editor.viewColumn) {
-    filename = editor.document.uri.fsPath;
-    if (files.indexOf(filename) === -1) {
-      files.push(filename);
-    }
-  } else {
-    vscode.commands.executeCommand("workbench.action.nextEditor");
-    await delay(delayNext);
-    editor = vscode.window.activeTextEditor;
-    if (editor) {
-      if (editor.viewColumn) {
-        filename = editor.document.uri.fsPath;
-        if (files.indexOf(filename) === -1) {
-          files.push(filename);
-        }
-      } else {
-        vscode.window.showWarningMessage(
-          "[SKIPPING] Editor file is not fully open"
-        );
+  const allFiles = await Utils.getAllFilesRecursiveAsync(folders, true);
+  if (!allFiles.length) {
+    vscode.window.showWarningMessage("No files found to compile in the workspace.");
+    return;
+  }
+  const task = buildFile(allFiles, recompile);
+  vscode.window.setStatusBarMessage(
+    `$(gear~spin) ${vscode.l10n.t("Building...")}`, task
+  );
+  await task;
+}
+
+export async function commandBuildOpenEditors(recompile: boolean): Promise<void> {
+  const files = new Set<string>();
+
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      if (tab.input instanceof vscode.TabInputText &&
+          tab.input.uri.scheme === "file") {
+        files.add(tab.input.uri.fsPath);
       }
     }
   }
 
-  //TODO: melhorar essa rotina usando vscode.workspace.textDocuments
-  do {
-    vscode.commands.executeCommand("workbench.action.nextEditor");
-    await delay(delayNext);
-    nextEditor = vscode.window.activeTextEditor;
-    if (!nextEditor) {
-      // arquivo que não pode ser aberto pelo editor (binarios ou requerem confirmacao do usuario)
-      continue;
-    }
-    if (
-      nextEditor &&
-      !sameEditor(editor as vscode.TextEditor, nextEditor as vscode.TextEditor)
-    ) {
-      if (nextEditor.viewColumn) {
-        filename = nextEditor.document.uri.fsPath;
-        if (files.indexOf(filename) === -1) {
-          files.push(filename);
-        }
-      } else {
-        vscode.window.showWarningMessage(
-          "[SKIPPING] Editor file is not fully open"
-        );
-      }
-    } else {
-      // retornou ao primeiro editor
-      break;
-    }
-  } while (true);
-  // check if there are files to compile
-  if (files.length > 0) {
-    const compileOptions = _getCompileOptionsDefault();
-    compileOptions.recompile = recompile;
-    buildCode(files, compileOptions);
-  } else {
-    vscode.window.showWarningMessage("There is nothing to compile");
-  }
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function sameEditor(editor: vscode.TextEditor, nextEditor: vscode.TextEditor) {
-  if (editor === undefined && nextEditor === undefined) {
-    return true;
+  if (!files.size) {
+    vscode.window.showWarningMessage("There are no open files to compile.");
+    return;
   }
 
-  if (editor === undefined || nextEditor === undefined) {
-    return false;
-  }
-
-  return editor.document === nextEditor.document;
+  const options = _getCompileOptionsDefault();
+  options.recompile = recompile;
+  const task = buildCode([...files], options);
+  vscode.window.setStatusBarMessage(
+    `$(gear~spin) ${vscode.l10n.t("Building...")}`, task
+  );
+  await task;
 }
