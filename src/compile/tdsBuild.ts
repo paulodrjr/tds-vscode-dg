@@ -8,6 +8,7 @@ var windows1251 = require("windows-1251");
 
 import { ResponseError } from "vscode-languageclient";
 import { CompileResult } from "./CompileResult";
+import { getCompilationOutcome, formatCompilationFailure } from "./compileOutcome";
 import { sendCompilation } from "../protocolMessages";
 
 interface CompileOptions {
@@ -107,6 +108,25 @@ export async function generatePpo(filePath: string, options?: any): Promise<stri
 }
 
 /**
+ * Show a modal instead of relying on the Output panel, which developers may
+ * not have visible when a compile finishes.
+ */
+function showCompilationFailure(message: string, detail: string): void {
+  void vscode.window.showErrorMessage(
+    message,
+    { modal: true, detail },
+    "Abrir saída TOTVS",
+    "Ver problemas"
+  ).then(choice => {
+    if (choice === "Abrir saída TOTVS") {
+      languageClient.outputChannel.show();
+    } else if (choice === "Ver problemas") {
+      void vscode.commands.executeCommand("workbench.action.problems.focus");
+    }
+  });
+}
+
+/**
  * Builds a file.
  */
 export function buildFile(filename: string[], recompile: boolean): Promise<void> {
@@ -183,10 +203,17 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
       // The LSP connection was restarted: ignore the response from the former session.
       return;
     }
-    if (response.returnCode === 40840) ServersConfig.removeExpiredAuthorization();
-    const errors = response.compileInfos?.some(info =>
-      info.status === "FATAL" || info.status === "ERROR" || info.status === "WARN");
-    if (errors) {
+    if (response?.returnCode === 40840) ServersConfig.removeExpiredAuthorization();
+
+    const outcome = getCompilationOutcome(response);
+    if (outcome.failed) {
+      const description = formatCompilationFailure(outcome, filesPaths);
+      languageClient.outputChannel.appendLine("[ERROR] " + description.replace(/\n/g, " | "));
+      showCompilationFailure("Falha na compilação", description);
+      return;
+    }
+
+    if (outcome.warnings.length > 0) {
       void vscode.commands.executeCommand("workbench.action.problems.focus");
     }
     if (filesUris.length > 1 && (response.compileInfos?.length || 0) > 0) {
@@ -195,7 +222,7 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     languageClient.error(message, err as any);
-    vscode.window.showErrorMessage("Compilation failed: " + message);
+    showCompilationFailure("Falha na compilação", message);
   } finally {
     completeBuildOperation(operationId);
   }
@@ -245,33 +272,31 @@ export async function compileFilesForPatch(
   const options = _getCompileOptionsDefault();
   options.recompile = true;
 
-  const response = await watchCompilation(
-    sendCompilation(server, includeUris,
-      filesPaths.map(file => vscode.Uri.file(file).toString()),
-      options, extensionsAllowed, isAdvpl), operationId);
+  let response: CompileResult;
+  try {
+    response = await watchCompilation(
+      sendCompilation(server, includeUris,
+        filesPaths.map(file => vscode.Uri.file(file).toString()),
+        options, extensionsAllowed, isAdvpl), operationId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error("Falha na compilação: " + message);
+  }
 
   if (!isBuildOperationActive(operationId)) {
-    throw new Error("The compilation was invalidated after a Language Server restart or manual reset.");
+    throw new Error("A compilação foi invalidada após a reinicialização do Language Server.");
   }
-  if (!response) throw new Error("The Language Server returned no compilation result.");
-
-  if (response.returnCode === 40840) {
+  if (response?.returnCode === 40840) {
     ServersConfig.removeExpiredAuthorization();
   }
 
-  const failed = (response.compileInfos || []).filter(info =>
-    info.status === "ERROR" || info.status === "FATAL");
-  if (response.returnCode !== 0 || failed.length) {
-    if (failed.length) {
+  const outcome = getCompilationOutcome(response);
+  if (outcome.failed) {
+    if (outcome.errors.length) {
       void vscode.commands.executeCommand("workbench.action.problems.focus");
     }
-    const detail = failed.slice(0, 3)
-      .map(info => info.filePath + ": " + (info.message || info.detail || info.status))
-      .join("; ");
-    throw new Error(
-      "Compilation failed (code " + response.returnCode + "). " +
-      (detail || "Inspect TOTVS LS output for details.")
-    );
+    throw new Error("Falha na compilação: " +
+      formatCompilationFailure(outcome, filesPaths));
   }
   return response;
 }

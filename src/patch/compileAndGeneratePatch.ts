@@ -249,7 +249,20 @@ export async function compileAndGeneratePatch(
     languageClient.outputChannel.appendLine(
       "[Compile and generate patch] " + message
     );
-    vscode.window.showErrorMessage("Compilar e gerar patch: " + message);
+    const compileFailed = message.startsWith("Falha na compilação");
+    if (compileFailed) {
+      void vscode.window.showErrorMessage(
+        "Falha na compilação — patch não gerado",
+        { modal: true, detail: message },
+        "Abrir saída TOTVS"
+      ).then(action => {
+        if (action === "Abrir saída TOTVS") {
+          languageClient.outputChannel.show();
+        }
+      });
+    } else {
+      vscode.window.showErrorMessage("Compilar e gerar patch: " + message);
+    }
   } finally {
     if (operationId !== undefined) completeBuildOperation(operationId);
   }
