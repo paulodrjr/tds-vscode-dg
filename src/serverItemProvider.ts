@@ -99,6 +99,7 @@ class ServerItemProvider
   }
 
   getTreeItem(element: ServerItem | EnvSection): vscode.TreeItem {
+    element.updatePresentation();
     return element;
   }
 

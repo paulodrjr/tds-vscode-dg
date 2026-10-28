@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import serverProvider from "./serverItemProvider";
 
-const RESOURCE_FOLDER = path.join(__filename, "..", "..", "resources");
+const RESOURCE_FOLDER = path.join(vscode.extensions.getExtension("paulodrjr.tds-vscode-dg")?.extensionPath || path.resolve(__dirname, ".."), "resources");
 const RESOURCE_DARK = path.join(RESOURCE_FOLDER, "dark");
 const RESOURCE_LIGHT = path.join(RESOURCE_FOLDER, "light");
 
@@ -57,12 +57,16 @@ export class ServerItem extends vscode.TreeItem {
 
   description = `${this.address}:${this.port}`;
   tooltip = `${serverTypeString(this.type)} ${this.buildVersion}`;
-  iconPath = {
-    light: vscode.Uri.file(path.join(RESOURCE_LIGHT, serverTypeImage(this))),
-    dark: vscode.Uri.file(path.join(RESOURCE_DARK, serverTypeImage(this))),
-  };
-
-  contextValue = this.isConnected ? "serverItem" : "serverItemNotConnected";
+  // Tree item fields are refreshed when the provider requests them, not during
+  // initialization, when connection state and derived properties may be stale.
+  public updatePresentation(): void {
+    const icon = serverTypeImage(this);
+    this.iconPath = {
+      light: vscode.Uri.file(path.join(RESOURCE_LIGHT, icon)),
+      dark: vscode.Uri.file(path.join(RESOURCE_DARK, icon)),
+    };
+    this.contextValue = this.isConnected ? "serverItem" : "serverItemNotConnected";
+  }
 }
 
 export class EnvSection extends vscode.TreeItem {
@@ -77,14 +81,15 @@ export class EnvSection extends vscode.TreeItem {
     return serverProvider.isCurrentEnvironment(this);
   }
 
-  iconPath = {
-    light: vscode.Uri.file(path.join(RESOURCE_LIGHT, environmentTypeImage(this))),
-    dark: vscode.Uri.file(path.join(RESOURCE_DARK, environmentTypeImage(this))),
-  };
-
-  tooltip = environmentTypeString(this);
-
-  contextValue = this.isCurrent ? "envSection" : "envSectionNotCurrent";
+  public updatePresentation(): void {
+    const icon = environmentTypeImage(this);
+    this.iconPath = {
+      light: vscode.Uri.file(path.join(RESOURCE_LIGHT, icon)),
+      dark: vscode.Uri.file(path.join(RESOURCE_DARK, icon)),
+    };
+    this.tooltip = environmentTypeString(this);
+    this.contextValue = this.isCurrent ? "envSection" : "envSectionNotCurrent";
+  }
 }
 
 function serverTypeString(type: ServerType): string {
