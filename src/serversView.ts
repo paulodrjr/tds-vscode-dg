@@ -392,7 +392,7 @@ function runCommandUpdateMonitor() {
 // Keep connection changes ordered so a delayed disconnect cannot clear a new session.
 let connectionQueue: Promise<void> = Promise.resolve();
 
-function queueConnection(operation: () => Promise<void>): Promise<void> {
+function queueConnection(operation: () => Thenable<void>): Promise<void> {
   const next = connectionQueue.then(operation, operation);
   connectionQueue = next.catch((error: any) => {
     const message = error instanceof Error ? error.message : String(error);
