@@ -1,0 +1,34 @@
+name: Validate TDS-VSCode fork
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript and VSIX package
+        run: npm run package
+      - name: Compile tests
+        run: npm run compile-test
+      - name: Publish installable VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: tds-vscode-vsix
+          path: "*.vsix"
+          if-no-files-found: error
+          retention-days: 7

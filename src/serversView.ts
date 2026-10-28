@@ -416,11 +416,12 @@ export async function cancelAuthentication(serverItem: ServerItem, generation: n
 
 function queueConnection(operation: () => Thenable<void>): Promise<void> {
   const next = connectionQueue.then(operation, operation);
+  // Keep the queue usable after a failed request, but preserve the rejection
+  // for the command that initiated it.
   connectionQueue = next.catch((error: any) => {
-    const message = error instanceof Error ? error.message : String(error);
-    vscode.window.showErrorMessage(vscode.l10n.t("Server connection failed: {0}", message));
+    console.error("Server connection operation failed:", error);
   });
-  return connectionQueue;
+  return next;
 }
 
 export function connectServer(
@@ -565,15 +566,19 @@ export function reconnectServer(
   });
 }
 
-export function reconnectLastServer() {
+export function reconnectLastServer(): Promise<void> {
   const lastConnectedServer = ServersConfig.lastConnectedServer();
-  if (lastConnectedServer) {
-    reconnectServer(
-      lastConnectedServer,
-      lastConnectedServer.environment,
-      ConnTypeIds.CONNT_DEBUGGER
+  if (!lastConnectedServer) return Promise.resolve();
+  return reconnectServer(
+    lastConnectedServer,
+    lastConnectedServer.environment,
+    ConnTypeIds.CONNT_DEBUGGER
+  ).catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showWarningMessage(
+      "Could not restore the last server connection: " + message
     );
-  }
+  });
 }
 
 class NodeError {
