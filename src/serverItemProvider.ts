@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
+import * as path from "path";
 import { EnvSection, ServerItem, ServerType } from "./serverItem";
 import Utils, { ServersConfig } from "./utils";
 import { updateStatusBarItems } from "./statusBar";
@@ -170,8 +171,10 @@ class ServerItemProvider
         ServersConfig.createServerConfig();
       }
 
-      this.configWatcher = fs.watch(serversJson, { encoding: "buffer" }, (eventType, filename) => {
-        if (filename && eventType === "change") {
+      // Watch the directory, not the file inode: atomic renames replace the
+      // file and would otherwise leave the watcher attached to the old inode.
+      this.configWatcher = fs.watch(path.dirname(serversJson), (eventType, filename) => {
+        if (filename && filename.toString() === path.basename(serversJson)) {
           updateStatusBarItems();
           this.localServerItems = this.setConfigWithServerConfig();
           this.refresh();
