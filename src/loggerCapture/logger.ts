@@ -15,7 +15,7 @@ export function onCaptureLoggers(context: ExtensionContext) {
 		if (clicked === vscode.l10n.t("Yes")) {
 			if (!logFile) {
 				vscode.window.showInformationMessage(vscode.l10n.t("Capture Logs started. Reproduce the problem and close the grabber."));
-				const tmpFile = tmp.fileSync({ prefix: "vscode-tds-infos", postfix: ".log" });
+				const tmpFile = tmp.fileSync({ prefix: "vscode-tds-infos", postfix: ".log", discardDescriptor: true });
 				logFile = tmpFile.name;
 				const newLine: String = "\n--------------------------------------------------\n";
 				const tab = "\t";
@@ -107,6 +107,8 @@ export async function offCaptureLoggers(): Promise<void> {
     archive.file(path.basename(currentLog), await fs.promises.readFile(currentLog));
     const zipContent = await archive.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
     await fs.promises.writeFile(zipPath, zipContent);
+    // The archived temporary log is no longer required after a verified write.
+    await fs.promises.unlink(currentLog).catch(() => undefined);
     logStatusBarItem?.hide();
     logFile = "";
     vscode.window.showInformationMessage(
