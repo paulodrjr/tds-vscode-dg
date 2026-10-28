@@ -1067,6 +1067,12 @@
         "title": "Reset Local Compilation Lock",
         "category": "TOTVS",
         "description": "Manually release the local lock after confirming the AppServer has stopped compiling."
+      },
+      {
+        "command": "totvs-developer-studio.checkConnectionHealth",
+        "title": "Check AppServer Connection",
+        "category": "TOTVS",
+        "description": "Verify whether the current Language Server and AppServer session are responding."
       }
     ],
     "keybindings": [

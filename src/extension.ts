@@ -67,6 +67,7 @@ import serverProvider from "./serverItemProvider";
 import { registerWorkspace } from "./workspace";
 import { sendTelemetry } from "./protocolMessages";
 import { registerXRef } from "./xreferences";
+import { checkRemoteConnection } from "./server/connectionHealth";
 import { tlppTools } from "./tlpp-tools/tlppTools";
 import { openWebMonitor } from "./monitor/monitorLoader";
 
@@ -261,6 +262,11 @@ export function activate(context: ExtensionContext) {
         resetBuildCommands();
       }
     }
+  ));
+
+  context.subscriptions.push(commands.registerCommand(
+    "totvs-developer-studio.checkConnectionHealth",
+    () => checkRemoteConnection()
   ));
 
   //Compila os fontes/recursos selecionados
