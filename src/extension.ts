@@ -716,7 +716,7 @@ let canBuild: boolean = true;
 // The old request cannot finish when the Language Server transport has died.
 export function resetBuildCommands(): void {
   canBuild = true;
-  void vscode.commands.executeCommand("setContext", "totvs-developer-studio.canBuild", true);
+  void vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", true);
 }
 
 export function blockBuildCommands(block: boolean): boolean {
@@ -729,7 +729,7 @@ export function blockBuildCommands(block: boolean): boolean {
 
   canBuild = !block;
 
-  vscode.commands.executeCommand("setContext", "totvs-developer-studio.canBuild", canBuild);
+  vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", canBuild);
 
   return true;
 }

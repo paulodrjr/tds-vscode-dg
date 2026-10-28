@@ -364,10 +364,10 @@ function doFinishConnectProcess(
   runCommandUpdateMonitor();
   //let isSafeRPO = serverItem.isSafeRPO; // this is not working returning => undefined
   let isSafeRPO = serverItem.buildVersion.localeCompare("7.00.191205P") > 0;
-  // custom context totvs-developer-studio.isSafeRPO
+  // custom context tds-vscode.isSafeRPO
   vscode.commands.executeCommand(
     "setContext",
-    "totvs-developer-studio.isSafeRPO",
+    "tds-vscode.isSafeRPO",
     isSafeRPO
   );
 }
