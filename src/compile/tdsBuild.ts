@@ -9,6 +9,7 @@ var windows1251 = require("windows-1251");
 import { ResponseError } from "vscode-languageclient";
 import { CompileResult } from "./CompileResult";
 import { getCompilationOutcome, formatCompilationFailure } from "./compileOutcome";
+import { reportCompilationFailure, setCompilationAlertSources } from "./compileAlertMonitor";
 import { sendCompilation } from "../protocolMessages";
 
 interface CompileOptions {
@@ -108,25 +109,6 @@ export async function generatePpo(filePath: string, options?: any): Promise<stri
 }
 
 /**
- * Show a modal instead of relying on the Output panel, which developers may
- * not have visible when a compile finishes.
- */
-function showCompilationFailure(message: string, detail: string): void {
-  void vscode.window.showErrorMessage(
-    message,
-    { modal: true, detail },
-    "Abrir saída TOTVS",
-    "Ver problemas"
-  ).then(choice => {
-    if (choice === "Abrir saída TOTVS") {
-      languageClient.outputChannel.show();
-    } else if (choice === "Ver problemas") {
-      void vscode.commands.executeCommand("workbench.action.problems.focus");
-    }
-  });
-}
-
-/**
  * Builds a file.
  */
 export function buildFile(filename: string[], recompile: boolean): Promise<void> {
@@ -193,6 +175,7 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
 
   const operationId = beginBuildOperation();
   if (operationId === undefined) return;
+  setCompilationAlertSources(operationId, filesPaths);
 
   try {
     const response = await watchCompilation(
@@ -212,8 +195,8 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
         void vscode.commands.executeCommand("workbench.action.problems.focus");
       }
       const description = formatCompilationFailure(outcome, filesPaths);
-      languageClient.outputChannel.appendLine("[ERROR] " + description.replace(/\n/g, " | "));
-      showCompilationFailure("Falha na compilação", description);
+      languageClient.outputChannel.appendLine("[Compilation diagnosis] " + description.replace(/\n/g, " | "));
+      reportCompilationFailure(operationId, "Falha na compilação", description);
       return;
     }
 
@@ -226,7 +209,7 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     languageClient.error(message, err as any);
-    showCompilationFailure("Falha na compilação", message);
+    reportCompilationFailure(operationId, "Falha na compilação", message);
   } finally {
     completeBuildOperation(operationId);
   }
@@ -243,6 +226,7 @@ export async function compileFilesForPatch(
     throw new Error("The compilation operation is no longer active.");
   }
   if (!filesPaths.length) throw new Error("No source files were selected.");
+  setCompilationAlertSources(operationId, filesPaths, true);
 
   const config = vscode.workspace.getConfiguration("totvsLanguageServer");
   const dirty = vscode.workspace.textDocuments.some(

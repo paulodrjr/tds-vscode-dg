@@ -67,6 +67,12 @@ na visão `Problemas`, sem interromper o usuário com um erro modal.
 A geração de patch após compilação respeita os mesmos critérios e não deve
 continuar quando a compilação for considerada malsucedida.
 
+A extensão também monitora as mensagens escritas diretamente no canal
+`TOTVS LS`. Algumas versões do Language Server comunicam falhas fatais
+como `[Error - ...] [FATAL] Aborting: CASCCLI.PRW(696)` sem incluí-las na
+resposta estruturada da requisição de compilação. Essas mensagens agora
+disparam a mesma janela modal, sem gerar alertas repetidos.
+
 ## Acesso exclusivo ao _RPO_
 
 Para compilar necessitamos de acesso exclusivo ao RPO. Caso contrário, o Application Server retornará um erro de:

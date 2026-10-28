@@ -68,6 +68,7 @@ import serverProvider from "./serverItemProvider";
 import { registerWorkspace } from "./workspace";
 import { sendTelemetry } from "./protocolMessages";
 import { registerXRef } from "./xreferences";
+import { beginCompilationAlerts, finishCompilationAlerts, resetCompilationAlerts } from "./compile/compileAlertMonitor";
 import { checkRemoteConnection } from "./server/connectionHealth";
 import { tlppTools } from "./tlpp-tools/tlppTools";
 import { openWebMonitor } from "./monitor/monitorLoader";
@@ -759,6 +760,7 @@ export function beginBuildOperation(): number | undefined {
   }
   canBuild = false;
   buildOperationId++;
+  beginCompilationAlerts(buildOperationId);
   void commands.executeCommand("setContext", "tds-vscode.canBuild", false);
   return buildOperationId;
 }
@@ -769,6 +771,7 @@ export function isBuildOperationActive(id: number): boolean {
 
 export function completeBuildOperation(id: number): void {
   if (isBuildOperationActive(id)) {
+    finishCompilationAlerts(id);
     canBuild = true;
     void commands.executeCommand("setContext", "tds-vscode.canBuild", true);
   }
@@ -777,6 +780,7 @@ export function completeBuildOperation(id: number): void {
 /** Invalidates pending request generations after an explicit recovery or LSP failure. */
 export function resetBuildCommands(): void {
   buildOperationId++;
+  resetCompilationAlerts();
   canBuild = true;
   void commands.executeCommand("setContext", "tds-vscode.canBuild", true);
 }

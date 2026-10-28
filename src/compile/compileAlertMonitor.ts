@@ -106,7 +106,11 @@ function observeOutputLine(line: string): void {
         file.replace(/\\/g, "/").toLowerCase().endsWith("/" + finding.file!.toLowerCase()));
       if (!requested) return;
     }
-    session.pending = { title: finding.title, detail: finding.detail, fromLog: true };
+    // Prefer a diagnostic with an explicit file/line over generic log lines.
+    if (!session.pending || !session.pending.fromLog ||
+        (finding.line !== undefined && !session.pending.title.includes("(linha "))) {
+      session.pending = { title: finding.title, detail: finding.detail, fromLog: true };
+    }
     scheduleAlert(session);
   } else if (session.pending?.fromLog && line.trim() &&
       !isNewLanguageServerLogEntry(line) &&

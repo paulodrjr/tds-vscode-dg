@@ -17,6 +17,7 @@ import { TotvsLanguageClientA } from "./TotvsLanguageClientA";
 import { IServerNotificationInfo, IUsageStatusInfo } from './protocolMessages';
 import { updateUsageBarItem } from "./statusBar";
 import { getLanguageServerSettings } from './server/languageServerSettings';
+import { CompilerObservedOutputChannel } from './compile/compileAlertMonitor';
 
 export function getLanguageClient(
   context: vscode.ExtensionContext
@@ -92,12 +93,19 @@ export function getLanguageClient(
   }
 
   let languageClient: TotvsLanguageClientA;
+  // The LSP sends compiler errors to the Output channel even when its RPC
+  // compilation response does not report ERROR/FATAL diagnostics.
+  const observedOutput = new CompilerObservedOutputChannel(
+    vscode.window.createOutputChannel("TOTVS LS")
+  );
+  context.subscriptions.push(observedOutput);
 
   // Options to control the language client
   let clientOptions: LanguageClientOptions = {
     documentSelector: [{ language: "advpl" }, { language: "4gl" }],
     diagnosticCollectionName: "AdvPL",
     outputChannelName: "TOTVS LS",
+    outputChannel: observedOutput,
     traceOutputChannel: outputTrace,
     revealOutputChannelOn: RevealOutputChannelOn.Error,
     //stdioEncoding?: string;

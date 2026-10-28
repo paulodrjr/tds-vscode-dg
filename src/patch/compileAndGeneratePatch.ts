@@ -5,6 +5,7 @@ import Utils, { ServersConfig } from "../utils";
 import { beginBuildOperation, completeBuildOperation, isBuildOperationActive, languageClient } from "../extension";
 import { compileFilesForPatch } from "../compile/tdsBuild";
 import { sendPatchGenerateMessageStrict } from "./patchUtil";
+import { reportCompilationFailure } from "../compile/compileAlertMonitor";
 
 const EXCLUDED_EXTENSIONS = new Set([".ch", ".th"]);
 const EXCLUDED_DIRECTORIES = new Set(["node_modules", ".git", ".vscode", "out", "out-test"]);
@@ -250,16 +251,10 @@ export async function compileAndGeneratePatch(
       "[Compile and generate patch] " + message
     );
     const compileFailed = message.startsWith("Falha na compilação");
-    if (compileFailed) {
-      void vscode.window.showErrorMessage(
-        "Falha na compilação — patch não gerado",
-        { modal: true, detail: message },
-        "Abrir saída TOTVS"
-      ).then(action => {
-        if (action === "Abrir saída TOTVS") {
-          languageClient.outputChannel.show();
-        }
-      });
+    if (compileFailed && operationId !== undefined) {
+      reportCompilationFailure(
+        operationId, "Falha na compilação", message
+      );
     } else {
       vscode.window.showErrorMessage("Compilar e gerar patch: " + message);
     }

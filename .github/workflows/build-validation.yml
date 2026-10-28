@@ -27,6 +27,8 @@ jobs:
         run: npm run compile-test
       - name: Test compiler failure detection
         run: node test/unit/compileOutcome.cjs
+      - name: Test fatal compiler log detection
+        run: node test/unit/compileLogParser.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:
