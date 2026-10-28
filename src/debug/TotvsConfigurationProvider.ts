@@ -31,13 +31,17 @@ export class TotvsConfigurationProvider implements DebugConfigurationProvider {
     config: DebugConfiguration,
     token?: CancellationToken
   ): Promise<DebugConfiguration> {
-    if (!canDebug()) {
+    if (token?.isCancellationRequested || !canDebug()) {
       return undefined;
     }
 
     this._connectedServerItem = serverProvider.connectedServerItem;
 
     if (this._connectedServerItem !== undefined) {
+      if (!this._connectedServerItem.token) {
+        window.showErrorMessage("Cannot start debugger: invalid AppServer session. Reconnect first.");
+        return undefined;
+      }
       if (!config.type && !config.request && !config.name) {
         const editor = window.activeTextEditor;
         if (editor && editor.document.languageId === "totvs-developer-studio") {
@@ -48,7 +52,7 @@ export class TotvsConfigurationProvider implements DebugConfigurationProvider {
       }
 
       config.environment = this._connectedServerItem.environment;
-      config.environmentType = this._connectedServerItem.informations.environmentDetectedType;
+      config.environmentType = this._connectedServerItem.informations?.environmentDetectedType || this._connectedServerItem.type;
       config.token = this._connectedServerItem.token;
 
       // se no server conectado houver a informacao de smartclientBin utiliza a informacao
@@ -73,7 +77,12 @@ export class TotvsConfigurationProvider implements DebugConfigurationProvider {
       }
 
       if (!config.cwb || config.cwb === "") {
-        config.cwb = folder.uri.fsPath;
+        config.cwb = folder?.uri.fsPath ||
+          vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+        if (!config.cwb) {
+          window.showErrorMessage("Cannot start debugger without CWB. Open a workspace folder or set cwb in launch.json.");
+          return undefined;
+        }
         window.showInformationMessage(
           vscode.l10n.t("Parameter CWB not informed. Setting to {0}", config.cwb)
         );
@@ -124,47 +133,52 @@ export class TotvsConfigurationProvider implements DebugConfigurationProvider {
     return config;
   }
 
-  resolveDebugConfigurationWithSubstitutedVariables(
+  async resolveDebugConfigurationWithSubstitutedVariables(
     folder: WorkspaceFolder | undefined,
     debugConfiguration: DebugConfiguration,
     token?: CancellationToken
-  ): vscode.ProviderResult<DebugConfiguration> {
-    if (token.isCancellationRequested) {
+  ): Promise<DebugConfiguration | undefined> {
+    if (token?.isCancellationRequested) return undefined;
+
+    const programName = debugConfiguration.program;
+    if (typeof programName !== "string" || !programName.trim()) {
+      window.showWarningMessage(vscode.l10n.t("Cannot find a program to debug"));
       return undefined;
     }
 
-    const programArgs: ProgramArgs = extractProgramArgs(
-      debugConfiguration.program
-    );
-    if (debugConfiguration.programArguments) {
-      if (typeof debugConfiguration.programArguments === 'string') {
-        debugConfiguration.programArguments = JSON.parse(debugConfiguration.programArguments);
+    const programArgs: ProgramArgs = extractProgramArgs(programName);
+    if (!programArgs || programArgs.program === "<cancel>" ||
+        programArgs.args?.includes("<cancel>")) return undefined;
+
+    if (debugConfiguration.programArguments !== undefined &&
+        debugConfiguration.programArguments !== null) {
+      try {
+        let args = debugConfiguration.programArguments;
+        if (typeof args === "string") args = JSON.parse(args);
+        if (!Array.isArray(args)) throw new Error("Expected an array of arguments.");
+        if (args.length > 0) programArgs.args = args;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        window.showErrorMessage("Invalid programArguments in launch.json: " + message);
+        return undefined;
       }
-      if (debugConfiguration.programArguments.length > 0) {
-        programArgs.args = debugConfiguration.programArguments;
-      }
     }
 
-    if (
-      programArgs.program == "<cancel>" ||
-      programArgs.args?.includes("<cancel>")
-    ) {
-      window.showInformationMessage(
-        vscode.l10n.t("Canceled by user.")
+    const program = programArgs.program.trim().toUpperCase();
+    if (!debugConfiguration.noDebug && (program === "SIGAMDI" || program === "SIGAADV")) {
+      const proceed = "Continue anyway";
+      const answer = await window.showWarningMessage(
+        "TOTVS does not recommend debugging through " + program +
+        ". Debugging the specific module directly (e.g. SIGAFAT, SIGAEST or SIGACOM) " +
+        "avoids module-selector startup failures. Continue anyway?",
+        { modal: true }, proceed
       );
-      return undefined; // abort launch
+      if (answer !== proceed) return undefined;
     }
 
-    if (!debugConfiguration.program) {
-      window.showInformationMessage(
-        vscode.l10n.t("Cannot find a program to debug")
-      );
-      return undefined; // abort launch
-    }
-
+    if (token?.isCancellationRequested) return undefined;
     debugConfiguration.program = programArgs.program;
-    debugConfiguration.programArguments = programArgs.args;
-
+    debugConfiguration.programArguments = programArgs.args || [];
     return this.finalize(debugConfiguration);
   }
 

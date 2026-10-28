@@ -143,8 +143,10 @@ export async function getProgramName(
           resolve(programArgs);
         }),
         qp.onDidChangeSelection((selection) => {
-          programArgs = new ProgramArgs(selection[0].label, selection[0].args);
-          resolve(programArgs);
+          if (selection.length) {
+            programArgs = new ProgramArgs(selection[0].label, selection[0].args);
+            resolve(programArgs);
+          }
         }),
         qp.onDidAccept(() => {
           // se vier de uma seleção 'programArgs' virá preenchido
@@ -164,8 +166,11 @@ export async function getProgramName(
     disposables.forEach((d) => d.dispose());
   }
 
-  if (programArgs && programArgs.program !== "<cancel>") {
-    const find: boolean = LaunchConfig.lastPrograms().some(
+  if (!programArgs || !programArgs.program ||
+      programArgs.program === "<cancel>") return "<cancel>";
+
+  if (programArgs.program !== "<cancel>") {
+    const find: boolean = (LaunchConfig.lastPrograms() || []).some(
       (element: QuickPickProgram) => {
         return (
           element.label.toLowerCase() === programArgs.program.toLowerCase() &&
@@ -178,16 +183,6 @@ export async function getProgramName(
       LaunchConfig.lastProgramsAdd(
         new QuickPickProgram(programArgs.program, programArgs.args)
       );
-    }
-  }
-
-  // add modal dialog confirmation warning for debugging using SIGAMDI or SIGAADV
-  if (!_config.noDebug && (programArgs.program.toUpperCase() === 'SIGAMDI' || programArgs.program.toUpperCase() === 'SIGAADV')) {
-    const textYes = vscode.l10n.t("Yes");
-    const textQuestion = vscode.l10n.t("Debugging using SIGAMDI or SIGAADV may result in unexpected behavior, instead use the modules directly. Do you want to continue?");
-    const warnDialog = await vscode.window.showWarningMessage(textQuestion, { modal: true }, textYes);
-    if (warnDialog !== textYes) {
-      return "<cancel>";
     }
   }
 
@@ -209,12 +204,12 @@ export function extractProgramArgs(value: string): ProgramArgs {
       if (testRegex.length == 3 && testRegex[2]) {
         args = extractArgs(testRegex[2]);
       }
-      programArgs = new ProgramArgs(testRegex[1], args);
+      programArgs = new ProgramArgs(testRegex[1].trim(), args || []);
     } else {
       programArgs = new ProgramArgs("<cancel>", []);
     }
   }
-  return programArgs;
+  return programArgs || new ProgramArgs("<cancel>", []);
 }
 
 function extractArgs(value: string): string[] {
