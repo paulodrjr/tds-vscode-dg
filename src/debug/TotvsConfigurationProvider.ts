@@ -13,7 +13,7 @@ import { canDebug } from "../extension";
 import { ServerItem } from "../serverItem";
 
 export class TotvsConfigurationProvider implements DebugConfigurationProvider {
-  static _TYPE: string = "totvs_language_debug";
+  static _TYPE: string = "tds_dg_language_debug";
   static _NAME: string = "TOTVS Language Debug (SmartClient)";
   static _SC_BIN: string = "";
 

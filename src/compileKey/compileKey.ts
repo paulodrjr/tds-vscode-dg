@@ -52,7 +52,7 @@ export function compileKeyPage(context: vscode.ExtensionContext) {
 function initializePage(context: vscode.ExtensionContext) {
   let extensionPath = "";
   if (!context || context === undefined) {
-    let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+    let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
     if (ext) {
       extensionPath = ext.extensionPath;
     }
@@ -60,7 +60,7 @@ function initializePage(context: vscode.ExtensionContext) {
     extensionPath = context.extensionPath;
   }
   const currentPanel = vscode.window.createWebviewPanel(
-    "totvs-developer-studio.compile.key",
+    "tds-vscode-dg.compile.key",
     "Compile Key",
     vscode.ViewColumn.One,
     {

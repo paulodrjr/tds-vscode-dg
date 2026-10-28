@@ -31,7 +31,7 @@ export function patchValidates(context: vscode.ExtensionContext, args: any) {
   if (server) {
     let extensionPath = "";
     if (!context || context === undefined) {
-      let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+      let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
       if (ext) {
         extensionPath = ext.extensionPath;
       }
@@ -41,7 +41,7 @@ export function patchValidates(context: vscode.ExtensionContext, args: any) {
 
     if (!currentPanel) {
       currentPanel = vscode.window.createWebviewPanel(
-        "totvs-developer-studio.validate.patch",
+        "tds-vscode-dg.validate.patch",
         "Patch Validate",
         vscode.ViewColumn.One,
         {

@@ -27,7 +27,7 @@ const localizeHTML = {
 
 
 const replayLaunchInfo: any = {
-  type: "totvs_tdsreplay_debug",
+  type: "tds_dg_tdsreplay_debug",
   request: "launch",
   cwb: "${workspaceRoot}",
   ignoreSourcesNotFound: true,
@@ -42,7 +42,7 @@ export default class LauncherConfiguration {
       //addLaunchJsonListener();
 
       currentPanel = vscode.window.createWebviewPanel(
-        "totvs-developer-studio.tdsreplay.configure.launcher",
+        "tds-vscode-dg.tdsreplay.configure.launcher",
         vscode.l10n.t("TDS Replay Launcher Configuration"),
         vscode.ViewColumn.One,
         {
