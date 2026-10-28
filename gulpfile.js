@@ -70,7 +70,13 @@ const addL10nTask = function () {
   //   .pipe(gulp.dest("."));
 };
 
-const buildTask = gulp.series(cleanTask, internalNlsCompileTask, addL10nTask, internalCompileWebpack, internalCompileEsBuildProd);
+// Generate the ignored PEG.js parser before bundling the extension.
+// The compiled parser is deliberately not stored in the repository.
+const generate4glParserTask = function () {
+  return run("npm run compile:parse_4gl").exec();
+};
+
+const buildTask = gulp.series(cleanTask, generate4glParserTask, internalNlsCompileTask, addL10nTask, internalCompileWebpack, internalCompileEsBuildProd);
 
 const doCompile = function (buildNls) {
   var r = tsProject

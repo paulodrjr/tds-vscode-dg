@@ -64,7 +64,8 @@ const watchConfig = {
       console.log("build complete");
     }
   } catch (err) {
-    process.stderr.write(err.stderr);
+    console.error(err);
+    process.exitCode = 1;
     process.exit(1);
   }
 })();
