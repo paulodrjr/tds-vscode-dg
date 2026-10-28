@@ -9,7 +9,11 @@ var windows1251 = require("windows-1251");
 import { ResponseError } from "vscode-languageclient";
 import { CompileResult } from "./CompileResult";
 import { getCompilationOutcome, formatCompilationFailure } from "./compileOutcome";
-import { reportCompilationFailure, setCompilationAlertSources } from "./compileAlertMonitor";
+import {
+  getLoggedCompilationFailure,
+  reportCompilationFailure,
+  setCompilationAlertSources
+} from "./compileAlertMonitor";
 import { sendCompilation } from "../protocolMessages";
 
 interface CompileOptions {
@@ -188,6 +192,14 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
     }
     if (response?.returnCode === 40840) ServersConfig.removeExpiredAuthorization();
 
+    const loggedFailure = getLoggedCompilationFailure(operationId);
+    if (loggedFailure) {
+      reportCompilationFailure(
+        operationId, loggedFailure.title, loggedFailure.detail
+      );
+      return;
+    }
+
     const outcome = getCompilationOutcome(response);
     if (outcome.failed) {
       // Preserve the original behavior of focusing compiler diagnostics.
@@ -276,6 +288,14 @@ export async function compileFilesForPatch(
   }
   if (response?.returnCode === 40840) {
     ServersConfig.removeExpiredAuthorization();
+  }
+
+  // The compiler may send its FATAL only as a log notification instead of
+  // including it in compileInfos/returnCode. Allow the final log to arrive.
+  await new Promise<void>(resolve => setTimeout(resolve, 200));
+  const loggedFailure = getLoggedCompilationFailure(operationId);
+  if (loggedFailure) {
+    throw new Error("Falha na compilação: " + loggedFailure.detail);
   }
 
   const outcome = getCompilationOutcome(response);

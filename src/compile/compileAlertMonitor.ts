@@ -14,6 +14,7 @@ interface CompileSession {
   sourceFiles: string[];
   generatesPatch: boolean;
   pending?: PendingAlert;
+  loggedFailure?: { title: string; detail: string };
   notificationTimer?: NodeJS.Timeout;
   expirationTimer?: NodeJS.Timeout;
 }
@@ -41,6 +42,13 @@ export function setCompilationAlertSources(
 export function resetCompilationAlerts(): void {
   if (currentSession) clearSessionTimers(currentSession);
   currentSession = undefined;
+}
+
+/** Exposes fatal plain-log diagnostics to build/patch result processing. */
+export function getLoggedCompilationFailure(
+  id: number
+): { title: string; detail: string } | undefined {
+  return currentSession?.id === id ? currentSession.loggedFailure : undefined;
 }
 
 function showPendingAlert(session: CompileSession): void {
@@ -111,11 +119,21 @@ function observeOutputLine(line: string): void {
         (finding.line !== undefined && !session.pending.title.includes("(linha "))) {
       session.pending = { title: finding.title, detail: finding.detail, fromLog: true };
     }
+    if (session.pending?.fromLog) {
+      session.loggedFailure = {
+        title: session.pending.title,
+        detail: session.pending.detail,
+      };
+    }
     scheduleAlert(session);
   } else if (session.pending?.fromLog && line.trim() &&
       !isNewLanguageServerLogEntry(line) &&
       session.pending.detail.split("\n").length < 6) {
     session.pending.detail += "\n" + line.trim().slice(0, 500);
+    session.loggedFailure = {
+      title: session.pending.title,
+      detail: session.pending.detail,
+    };
   }
 }
 

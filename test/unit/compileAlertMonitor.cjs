@@ -49,6 +49,9 @@ async function run() {
   listener.appendLine("[Error - 6:37:22 PM] [FATAL] Aborting: CASCCLI.PRW(696)");
   listener.appendLine("unsupported assign to constant at line 696");
   await sleep(230);
+  const loggedFailure = alerts.getLoggedCompilationFailure(102);
+  assert.ok(loggedFailure, "fatal diagnostics must be visible to compile-and-patch processing");
+  assert.match(loggedFailure.detail, /unsupported assign to constant/);
   assert.equal(dialogs.length, 1, "a fatal compiler log must open one modal");
   assert.match(dialogs[0].title, /CASCCLI\.PRW.*696/);
   assert.equal(dialogs[0].options.modal, true);
