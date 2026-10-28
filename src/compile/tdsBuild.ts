@@ -201,6 +201,81 @@ async function buildCode(filesPaths: string[], compileOptions: CompileOptions): 
   }
 }
 
+/**
+ * Strict compilation path for patch creation. The caller owns operationId and
+ * retains the build lock until the patch request has also completed.
+ */
+export async function compileFilesForPatch(
+  filesPaths: string[], expectedServer: any, operationId: number
+): Promise<CompileResult> {
+  if (!isBuildOperationActive(operationId)) {
+    throw new Error("The compilation operation is no longer active.");
+  }
+  if (!filesPaths.length) throw new Error("No source files were selected.");
+
+  const config = vscode.workspace.getConfiguration("totvsLanguageServer");
+  const dirty = vscode.workspace.textDocuments.some(
+    document => !document.isUntitled && document.isDirty);
+  if (dirty && !await vscode.workspace.saveAll(false)) {
+    throw new Error("Unsaved files: compilation was canceled.");
+  }
+
+  const server = ServersConfig.getCurrentServer();
+  if (!server || server.id !== expectedServer.id ||
+      server.environment !== expectedServer.environment ||
+      server.token !== expectedServer.token) {
+    throw new Error("The AppServer session changed before compilation.");
+  }
+
+  const isAdvpl = filesPaths.some(file => Utils.isAdvPlSource(file));
+  const includePaths = ServersConfig.getIncludes(true, server) || [];
+  const includeUris = includePaths.length
+    ? includePaths.map(include => vscode.Uri.file(include).toString())
+    : (vscode.workspace.workspaceFolders || []).map(folder => folder.uri.toString());
+
+  if (isAdvpl && !includeUris.length) {
+    throw new Error("No valid include folders are configured for compilation.");
+  }
+
+  let extensionsAllowed: string[] | undefined;
+  if (config.get("folder.enableExtensionsFilter", true)) {
+    extensionsAllowed = config.get<string[]>("folder.extensionsAllowed", []);
+  }
+
+  const options = _getCompileOptionsDefault();
+  options.recompile = true;
+
+  const response = await watchCompilation(
+    sendCompilation(server, includeUris,
+      filesPaths.map(file => vscode.Uri.file(file).toString()),
+      options, extensionsAllowed, isAdvpl), operationId);
+
+  if (!isBuildOperationActive(operationId)) {
+    throw new Error("The compilation was invalidated after a Language Server restart or manual reset.");
+  }
+  if (!response) throw new Error("The Language Server returned no compilation result.");
+
+  if (response.returnCode === 40840) {
+    ServersConfig.removeExpiredAuthorization();
+  }
+
+  const failed = (response.compileInfos || []).filter(info =>
+    info.status === "ERROR" || info.status === "FATAL");
+  if (response.returnCode !== 0 || failed.length) {
+    if (failed.length) {
+      void vscode.commands.executeCommand("workbench.action.problems.focus");
+    }
+    const detail = failed.slice(0, 3)
+      .map(info => info.filePath + ": " + (info.message || info.detail || info.status))
+      .join("; ");
+    throw new Error(
+      "Compilation failed (code " + response.returnCode + "). " +
+      (detail || "Inspect TOTVS LS output for details.")
+    );
+  }
+  return response;
+}
+
 function verifyCompileResult(response) {
   const textNoAsk = vscode.l10n.t("Don't ask again");
   const textNo = vscode.l10n.t("No");
