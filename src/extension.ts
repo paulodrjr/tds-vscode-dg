@@ -17,7 +17,8 @@ import Utils, { LaunchConfig, ServersConfig } from "./utils";
 import { createNewProtheusServer, ServersExplorer } from "./serversView";
 import { compileKeyPage } from "./compileKey/compileKey";
 import { getLanguageClient } from "./TotvsLanguageClient";
-import { patchGenerate, patchGenerateFromFolder } from "./patch/patchGenerate";
+import { patchGenerate } from "./patch/patchGenerate";
+import { compileAndGeneratePatch } from "./patch/compileAndGeneratePatch";
 import {
   commandBuildFile,
   commandBuildWorkspace,
@@ -382,11 +383,22 @@ export function activate(context: ExtensionContext) {
     )
   );
 
-  //Gera um patch de acordo com os arquivos contidos em uma pasta
+  // Compiles selected Explorer files and folders before generating a patch.
+  context.subscriptions.push(
+    commands.registerCommand(
+      "totvs-developer-studio.compileAndGeneratePatch",
+      (resource?: vscode.Uri, selected?: vscode.Uri[]) =>
+        compileAndGeneratePatch(resource, selected)
+    )
+  );
+
+  // Preserve the old command identifier for existing keybindings and workflows,
+  // but route it through the safe, awaited implementation.
   context.subscriptions.push(
     commands.registerCommand(
       "totvs-developer-studio.patchGenerate.fromFolder",
-      (context) => patchGenerateFromFolder(context)
+      (resource?: vscode.Uri, selected?: vscode.Uri[]) =>
+        compileAndGeneratePatch(resource, selected)
     )
   );
   //Valida o conteúdo de um patch pelo menu de contexto em arquivos de patch

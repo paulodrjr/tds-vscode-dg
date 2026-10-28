@@ -31,3 +31,30 @@ No lugar de selecionar os arquivos manualmente, é possível gerar o pacote a pa
 - Após as confirmações, o pacote será gerado na pasta indicada
 
 ![Patch Generate Folder](./gifs/GeneratePatchWizardFromFolder.gif)
+
+## Compilar e gerar patch a partir do Explorer
+
+Na visão **Explorer** do VS Code, selecione um ou mais arquivos, pastas ou uma
+combinação dos dois. Clique com o botão direito e escolha **TOTVS: Compilar e gerar patch**.
+
+A extensão:
+
+1. Percorre as pastas selecionadas, respeitando `.tdscompileignore` e
+   `.tdspatchignore`, a lista de arquivos ignorados e as extensões permitidas
+   nas configurações de compilação.
+2. Exclui `.ch` e `.th`, que são includes e não objetos do RPO, e impede
+   a geração caso haja arquivos com o mesmo nome em diretórios diferentes.
+3. Solicita o diretório de destino e o nome do patch (opcional).
+4. Exibe uma confirmação com o servidor, ambiente e quantidade de arquivos.
+5. **Recompila** os arquivos selecionados, aguardando o retorno do Language Server.
+6. Não gera patch se ocorrer erro de compilação ou se a sessão mudar.
+   Havendo avisos (`WARN`), solicita autorização explícita para continuar.
+7. Gera o patch a partir dos nomes dos arquivos recompilados que foram incluídos no RPO.
+
+O comando antigo **Generate Patch From Folder** permanece registrável, mas
+agora utiliza o mesmo fluxo protegido, sem iniciar a geração antes do fim da
+compilação.
+
+**Importante:** a seleção de fontes é local; os objetos empacotados são
+extraídos do RPO do AppServer conectado. Execute em desenvolvimento ou homologação,
+nunca em produção sem um procedimento controlado.

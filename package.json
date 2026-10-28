@@ -1073,6 +1073,12 @@
         "title": "Check AppServer Connection",
         "category": "TOTVS",
         "description": "Verify whether the current Language Server and AppServer session are responding."
+      },
+      {
+        "command": "totvs-developer-studio.compileAndGeneratePatch",
+        "title": "Compilar e gerar patch",
+        "description": "Compila os arquivos e pastas selecionados no Explorer e gera um patch apenas após uma compilação válida.",
+        "category": "TOTVS"
       }
     ],
     "keybindings": [
@@ -1609,8 +1615,8 @@
           "group": "totvsBuild@5"
         },
         {
-          "when": "explorerResourceIsFolder",
-          "command": "totvs-developer-studio.patchGenerate.fromFolder",
+          "when": "resourceScheme == file",
+          "command": "totvs-developer-studio.compileAndGeneratePatch",
           "group": "totvsBuild@7"
         },
         {
@@ -1837,6 +1843,10 @@
         {
           "command": "totvs-developer-studio.tdsreplay.webview.timeLine",
           "when": "debugType == totvs_tdsreplay_debug"
+        },
+        {
+          "command": "totvs-developer-studio.compileAndGeneratePatch",
+          "when": "1 == 0"
         }
       ]
     }

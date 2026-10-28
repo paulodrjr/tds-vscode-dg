@@ -99,7 +99,7 @@ function getExplorerSelection(
     path.normalize(uri.fsPath).toLowerCase() ===
       path.normalize(clicked.fsPath).toLowerCase());
 
-  const inputs = matchingSelection ? [...selected] : [clicked];
+  const inputs = matchingSelection ? [...(selected || [])] : [clicked];
   const unique = new Map<string, vscode.Uri>();
   for (const uri of inputs) {
     if (uri.scheme !== "file") continue;
@@ -175,7 +175,7 @@ export async function compileAndGeneratePatch(
       prompt: "Nome do patch (sem extensão). Deixe vazio para usar o padrão do RPO.",
       value: "",
       validateInput: value =>
-        /[\\/:*?"<>|]/.test(value) ? "Informe somente o nome, sem caracteres de caminho." : undefined,
+        (value.includes("\\") || value.includes("/") || /[:*?"<>|]/.test(value)) ? "Informe somente o nome, sem caracteres de caminho." : undefined,
     });
     if (requestedName === undefined) return;
     const patchName = requestedName.trim().replace(/\.ptm$/i, "");
