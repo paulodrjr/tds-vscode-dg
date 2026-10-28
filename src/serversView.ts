@@ -226,6 +226,7 @@ export class ServersExplorer {
           ));
         } else {
           serverProvider.connectedServerItem = undefined;
+          return Promise.resolve();
         }
       }
     );
