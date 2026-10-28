@@ -74,7 +74,7 @@ export function patchApply(
 
       if (!isWorkspace) {
         currentPanel = vscode.window.createWebviewPanel(
-          "totvs-developer-studio.patchApply",
+          "tds-vscode-dg.patchApply",
           "Patch Apply",
           vscode.ViewColumn.One,
           {
@@ -225,7 +225,7 @@ export function patchApply(
                       fsPath: message.file,
                     };
                     vscode.commands.executeCommand(
-                      "totvs-developer-studio.patchValidate.fromFile",
+                      "tds-vscode-dg.patchValidate.fromFile",
                       validateArgs
                     );
                   } else {
@@ -241,7 +241,7 @@ export function patchApply(
                       fsPath: message.file,
                     };
                     vscode.commands.executeCommand(
-                      "totvs-developer-studio.patchInfos.fromFile",
+                      "tds-vscode-dg.patchInfos.fromFile",
                       args
                     );
                   } else {

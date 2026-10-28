@@ -26,7 +26,7 @@ export default class WelcomePage {
 			currentPanel.reveal();
 		} else {
 			currentPanel = vscode.window.createWebviewPanel(
-				'totvs-developer-studio.welcomePage',
+				'tds-vscode-dg.welcomePage',
 				vscode.l10n.t("Welcome"),
 				vscode.ViewColumn.One,
 				{
