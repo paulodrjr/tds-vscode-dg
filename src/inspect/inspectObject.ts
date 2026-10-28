@@ -38,7 +38,7 @@ function inspectObjectLegado(context: vscode.ExtensionContext) {
 	if (server) {
 		let extensionPath = "";
 		if (!context || context === undefined) {
-			let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+			let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
 			if (ext) {
 				extensionPath = ext.extensionPath;
 			}
@@ -47,7 +47,7 @@ function inspectObjectLegado(context: vscode.ExtensionContext) {
 		}
 
 		const currentPanel = vscode.window.createWebviewPanel(
-			"totvs-developer-studio.inspect.object",
+			"tds-vscode-dg.inspect.object",
 			"Objects Inspector",
 			vscode.ViewColumn.One,
 			{

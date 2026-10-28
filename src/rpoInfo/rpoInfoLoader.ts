@@ -39,7 +39,7 @@ export class RpoInfoLoader implements vscode.Disposable {
   }
 
   constructor(context: vscode.ExtensionContext) {
-    const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+    const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
     this._extensionPath = ext.extensionPath;
     this._context = context;
 
@@ -205,7 +205,7 @@ export class RpoInfoLoader implements vscode.Disposable {
       });
       writeLine(SEPARATOR_LINE);
 
-      const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+      const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
       const now = new Date().toLocaleString();
 
       writeLine("");

@@ -87,7 +87,7 @@ export function activate(context: ExtensionContext) {
   LaunchConfig.createLaunchConfig(undefined);
 
   context.subscriptions.push(
-    commands.registerCommand("tds.getDAP", () => getDAP())
+    commands.registerCommand("tds-dg.getDAP", () => getDAP())
   );
 
   //Load Language Client and start Language Server
@@ -189,7 +189,7 @@ export function activate(context: ExtensionContext) {
   // Ação para pegar o nome da função e argumentos para  iniciar o debug
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.getProgramName",
+      "tds-vscode-dg.getProgramName",
       (config: vscode.DebugConfiguration) => {
         return getProgramName(config);
       }
@@ -198,7 +198,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.getProgramArguments",
+      "tds-vscode-dg.getProgramArguments",
       (config: vscode.DebugConfiguration) => {
         return getProgramArguments(config);
       }
@@ -206,19 +206,19 @@ export function activate(context: ExtensionContext) {
   );
   //Ação para desfragmentar o RPO do servidor corrente.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.defragRPO", () =>
+    commands.registerCommand("tds-vscode-dg.defragRPO", () =>
       defragRpo()
     )
   );
   //Ação para checar a integridade do RPO do servidor corrente.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.rpoCheckIntegrity", () =>
+    commands.registerCommand("tds-vscode-dg.rpoCheckIntegrity", () =>
       rpoCheckIntegrity()
     )
   );
   //Ação para revalidar o RPO do servidor corrente.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.revalidateRPO", () =>
+    commands.registerCommand("tds-vscode-dg.revalidateRPO", () =>
       revalidateRpo()
     )
   );
@@ -226,21 +226,21 @@ export function activate(context: ExtensionContext) {
   //Ação para deletar um fonte selecionado do RPO.
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.delete.file.fromRPO",
+      "tds-vscode-dg.delete.file.fromRPO",
       (context, files) => deleteFileFromRPO(context, files)
     )
   );
 
   //Ação par abrir a tela de inspetor de objetos.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.inspectorObjects", () =>
+    commands.registerCommand("tds-vscode-dg.inspectorObjects", () =>
       inspectObject(context)
     )
   );
 
   //Ação par abrir a tela de inspetor de funções.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.inspectorFunctions", () =>
+    commands.registerCommand("tds-vscode-dg.inspectorFunctions", () =>
       inspectFunctions(context)
     )
   );
@@ -248,47 +248,47 @@ export function activate(context: ExtensionContext) {
   //Compila os fontes/recursos selecionados
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.build.file",
+      "tds-vscode-dg.build.file",
       (args, files) => commandBuildFile(args, false, files)
     )
   );
   //Recompila os fontes/recursos selecionados
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.rebuild.file",
+      "tds-vscode-dg.rebuild.file",
       (args, files) => commandBuildFile(args, true, files)
     )
   );
 
   //Compila todos os arquivos dentro de um workspace.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.build.workspace", () =>
+    commands.registerCommand("tds-vscode-dg.build.workspace", () =>
       commandBuildWorkspace(false)
     )
   );
   //Recompila todos os arquivos dentro de um workspace.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.rebuild.workspace", () =>
+    commands.registerCommand("tds-vscode-dg.rebuild.workspace", () =>
       commandBuildWorkspace(true)
     )
   );
 
   //Compila todos os fontes abertos
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.build.openEditors", () =>
+    commands.registerCommand("tds-vscode-dg.build.openEditors", () =>
       commandBuildOpenEditors(false)
     )
   );
   //Recompila todos os fontes abertos
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.rebuild.openEditors", () =>
+    commands.registerCommand("tds-vscode-dg.rebuild.openEditors", () =>
       commandBuildOpenEditors(true)
     )
   );
   //Apresenta tabela de resultados da compilação
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.show.result.build",
+      "tds-vscode-dg.show.result.build",
       (compileResult: any) =>
         commandShowBuildTableResult(context, compileResult)
     )
@@ -302,7 +302,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.tdsreplay.webview.timeLine",
+      "tds-vscode-dg.tdsreplay.webview.timeLine",
       () => {
         if (_debugEvent !== undefined) {
           if (createTimeLineWebView !== null) {
@@ -318,14 +318,14 @@ export function activate(context: ExtensionContext) {
   //Abre a tela de geração de patch com seleção de arquivos do RPO.
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.patchGenerate.fromRPO",
+      "tds-vscode-dg.patchGenerate.fromRPO",
       () => patchGenerate(context)
     )
   );
 
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.patchGenerate.byDifference",
+      "tds-vscode-dg.patchGenerate.byDifference",
       () => {
         vscode.window.setStatusBarMessage(
           `$(gear~spin) ${vscode.l10n.t("Starting package generation...")}`,
@@ -337,7 +337,7 @@ export function activate(context: ExtensionContext) {
 
   //Aplica um pacote de atualização (patch).
   context.subscriptions.push(
-    vscode.commands.registerCommand("totvs-developer-studio.patchApply", () => {
+    vscode.commands.registerCommand("tds-vscode-dg.patchApply", () => {
       vscode.window.setStatusBarMessage(
         `$(gear~spin) ${vscode.l10n.t("Starting patch application...")}`,
         Promise.resolve(patchApply(context, false))
@@ -347,7 +347,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "totvs-developer-studio.patchApply.fromFile",
+      "tds-vscode-dg.patchApply.fromFile",
       (args: any) => {
         vscode.window.setStatusBarMessage(
           `$(gear~spin) ${vscode.l10n.t("Starting patch application...")}`,
@@ -360,14 +360,14 @@ export function activate(context: ExtensionContext) {
   //Gera um patch de acordo com os arquivos contidos em uma pasta
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.patchGenerate.fromFolder",
+      "tds-vscode-dg.patchGenerate.fromFolder",
       (context) => patchGenerateFromFolder(context)
     )
   );
   //Valida o conteúdo de um patch pelo menu de contexto em arquivos de patch
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.patchValidate.fromFile",
+      "tds-vscode-dg.patchValidate.fromFile",
       (args) => patchValidates(context, args)
     )
   );
@@ -375,23 +375,23 @@ export function activate(context: ExtensionContext) {
   //Verifica o conteúdo de um patch pelo menu de contexto em arquivos de patch
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.patchInfos.fromFile",
+      "tds-vscode-dg.patchInfos.fromFile",
       (args) => {
         const uri: vscode.Uri = vscode.Uri.file(args["fsPath"]);
-        vscode.commands.executeCommand("vscode.openWith", uri, "tds.patchView");
+        vscode.commands.executeCommand("vscode.openWith", uri, "tds.dg.patchView");
       }
     )
   );
   //Adiciona página de Includes
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.include", () =>
+    commands.registerCommand("tds-vscode-dg.include", () =>
       showInclude(context)
     )
   );
 
   //Adiciona página de geração de WSDL
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.ws.show", () =>
+    commands.registerCommand("tds-vscode-dg.ws.show", () =>
       showWSPage(context)
     )
   );
@@ -399,7 +399,7 @@ export function activate(context: ExtensionContext) {
   //Aplica um template.
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "totvs-developer-studio.templateApply",
+      "tds-vscode-dg.templateApply",
       () => {
         openTemplateApplyView(context, undefined);
       }
@@ -408,7 +408,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "totvs-developer-studio.templateApply.fromFile",
+      "tds-vscode-dg.templateApply.fromFile",
       (args: any) => {
         vscode.window.setStatusBarMessage(
           `$(gear~spin) ${vscode.l10n.t("Starting template application...")}`,
@@ -420,7 +420,7 @@ export function activate(context: ExtensionContext) {
 
   //monitor
   context.subscriptions.push(
-    vscode.commands.registerCommand("tds-monitor.open-monitor-view", () => {
+    vscode.commands.registerCommand("tds-dg-monitor.open-monitor-view", () => {
       openWebMonitor();
     })
   );
@@ -428,7 +428,7 @@ export function activate(context: ExtensionContext) {
   //rpo log
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "totvs-developer-studio.open-loadrpoinfo-view",
+      "tds-vscode-dg.open-loadrpoinfo-view",
       () => {
         vscode.window.setStatusBarMessage(
           `$(gear~spin) ${vscode.l10n.t("Starting RPO load information...")}`,
@@ -453,38 +453,38 @@ export function activate(context: ExtensionContext) {
   //Abre uma caixa de informações para login no servidor protheus selecionado.
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.serverSelection",
+      "tds-vscode-dg.serverSelection",
       (...args) => serverSelection(args, context)
     )
   );
 
   //Seleção/remoção do arquivo com RPO Token.
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.selectRpoToken", () => {
+    commands.registerCommand("tds-vscode-dg.selectRpoToken", () => {
       rpoTokenQuickPick();
     })
   );
 
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.selectRpoToken.enable", () => {
+    commands.registerCommand("tds-vscode-dg.selectRpoToken.enable", () => {
       setEnabledRpoToken(true);
     })
   );
 
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.selectRpoToken.disable", () => {
+    commands.registerCommand("tds-vscode-dg.selectRpoToken.disable", () => {
       setEnabledRpoToken(false);
     })
   );
 
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.inputRpoToken", () => {
+    commands.registerCommand("tds-vscode-dg.inputRpoToken", () => {
       rpoTokenInputBox();
     })
   );
 
   context.subscriptions.push(
-    commands.registerCommand("totvs-developer-studio.clearRpoToken", () => {
+    commands.registerCommand("tds-vscode-dg.clearRpoToken", () => {
       saveRpoTokenString(undefined).then(
         () => {
           vscode.window.showInformationMessage("RPO token clean");
@@ -499,7 +499,7 @@ export function activate(context: ExtensionContext) {
   //Troca rápida do local de salva do servers.json.
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.toggleSaveLocation",
+      "tds-vscode-dg.toggleSaveLocation",
       () => {
         Utils.toggleWorkspaceServerConfig();
       }
@@ -509,7 +509,7 @@ export function activate(context: ExtensionContext) {
   //Troca da indicação da atividade.
   context.subscriptions.push(
     commands.registerCommand(
-      "totvs-developer-studio.toggleUsageInfo",
+      "tds-vscode-dg.toggleUsageInfo",
       () => {
         Utils.toggleUsageInfoConfig();
       }
@@ -517,18 +517,18 @@ export function activate(context: ExtensionContext) {
   );
 
   //Compile key
-  commands.registerCommand("totvs-developer-studio.compile.key", () =>
+  commands.registerCommand("tds-vscode-dg.compile.key", () =>
     compileKeyPage(context)
   );
 
   // Abre a tela de configuração de launchers
-  commands.registerCommand("totvs-developer-studio.configure.launcher", () =>
+  commands.registerCommand("tds-vscode-dg.configure.launcher", () =>
     launcherConfig.show(context)
   );
 
   // Abre a tela de configuração de launchers
   commands.registerCommand(
-    "totvs-developer-studio.tdsreplay.configure.launcher",
+    "tds-vscode-dg.tdsreplay.configure.launcher",
     () => tdsReplayLauncherConfig.show(context)
   );
 
@@ -537,7 +537,7 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "totvs-developer-studio.run.formatter",
+      "tds-vscode-dg.run.formatter",
       (args: any[]) => {
         //console.log("formatador ativado");
         if (args === undefined) {
@@ -630,18 +630,18 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 function registerLog(context: vscode.ExtensionContext) {
-  commands.registerCommand("totvs-developer-studio.logger.on", () =>
+  commands.registerCommand("tds-vscode-dg.logger.on", () =>
     onCaptureLoggers(context)
   );
-  commands.registerCommand("totvs-developer-studio.logger.off", () =>
+  commands.registerCommand("tds-vscode-dg.logger.off", () =>
     offCaptureLoggers()
   );
 
-  commands.registerCommand("totvs-developer-studio.toggleTableSync", () =>
+  commands.registerCommand("tds-vscode-dg.toggleTableSync", () =>
     toggleTableSync()
   );
 
-  commands.registerCommand("totvs-developer-studio.detailUsageInfo", () => {
+  commands.registerCommand("tds-vscode-dg.detailUsageInfo", () => {
     sendTelemetry().then((value: any) => {
       const rootPath: string = vscode.workspace.workspaceFolders[0].uri.fsPath;
       const file: string = `${rootPath}/telemetry.txt`;
@@ -678,7 +678,7 @@ function showBanner(force: boolean = false) {
     const appLine = languageClient.outputChannel.appendLine;
 
     if (showBanner || force) {
-      let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+      let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
       // prettier-ignore
       {
         appLine("---------------------------v---------------------------------------------------");
@@ -716,7 +716,7 @@ let canBuild: boolean = true;
 // The old request cannot finish when the Language Server transport has died.
 export function resetBuildCommands(): void {
   canBuild = true;
-  void vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", true);
+  void vscode.commands.executeCommand("setContext", "tds-vscode-dg.canBuild", true);
 }
 
 export function blockBuildCommands(block: boolean): boolean {
@@ -729,7 +729,7 @@ export function blockBuildCommands(block: boolean): boolean {
 
   canBuild = !block;
 
-  vscode.commands.executeCommand("setContext", "tds-vscode.canBuild", canBuild);
+  vscode.commands.executeCommand("setContext", "tds-vscode-dg.canBuild", canBuild);
 
   return true;
 }

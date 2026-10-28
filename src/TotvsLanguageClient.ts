@@ -40,7 +40,7 @@ export function getLanguageClient(
     env[e] = process.env[e];
   }
 
-  const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+  const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
   const dir = ext.extensionPath;
   let advpls: string;
 

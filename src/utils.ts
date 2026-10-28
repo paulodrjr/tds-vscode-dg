@@ -1396,7 +1396,7 @@ export class LaunchConfig {
   static createLaunchConfig(launchInfo: any) {
     if (launchInfo === undefined) {
       launchInfo = {
-        type: "totvs_language_debug",
+        type: "tds_dg_language_debug",
         request: "launch",
         cwb: "${workspaceRoot}",
         name: "TOTVS Language Debug",
@@ -1407,7 +1407,7 @@ export class LaunchConfig {
       const launchConfig = getLaunchConfig();
       if (!launchConfig) {
         let fs = require("fs");
-        let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+        let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
         if (ext) {
           let sampleLaunch = {
             version: "0.2.0",
@@ -1420,7 +1420,7 @@ export class LaunchConfig {
           let debug = (contributes["debuggers"] as any[]).filter(
             (element: any) => {
               //return regexp.exec(element.type) ? false : true;
-              //return element.type === "totvs_language_debug";
+              //return element.type === "tds_dg_language_debug";
               return element.type === launchInfo.type;
             }
           );

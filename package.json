@@ -1,9 +1,9 @@
 {
-  "name": "tds-vscode",
-  "displayName": "TOTVS Developer Studio for VSCode (AdvPL, TLPP e 4GL)",
+  "name": "tds-vscode-dg",
+  "displayName": "TDS-VSCode DG (Experimental)",
   "description": "%tds.package.description%",
   "version": "2.0.14",
-  "publisher": "TOTVS",
+  "publisher": "paulodrjr",
   "preview": true,
   "author": {
     "name": "TOTVS",
@@ -23,7 +23,7 @@
   "engines": {
     "vscode": "^1.97.2"
   },
-  "icon": "icons/totvs-developer-studio.png",
+  "icon": "icons/tds-vscode-dg.png",
   "categories": [
     "Programming Languages",
     "Snippets",
@@ -33,10 +33,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/totvs/tds-vscode.git"
+    "url": "https://github.com/totvs/tds-vscode-dg.git"
   },
   "bugs": {
-    "url": "https://github.com/totvs/tds-vscode.git"
+    "url": "https://github.com/totvs/tds-vscode-dg.git"
   },
   "scripts": {
     "clean2": "gulp clean",
@@ -176,7 +176,7 @@
     ],
     "customEditors": [
       {
-        "viewType": "tds.patchView",
+        "viewType": "tds.dg.patchView",
         "displayName": "Patch file",
         "selector": [
           {
@@ -404,7 +404,7 @@
     },
     "configuration": {
       "type": "object",
-      "title": "TOTVS",
+      "title": "TDS DG",
       "properties": {
         "totvsLanguageServer.launch.args": {
           "type": "array",
@@ -725,105 +725,105 @@
     },
     "commands": [
       {
-        "command": "totvs-developer-studio.getDAP",
+        "command": "tds-vscode-dg.getDAP",
         "title": "Get DAP"
       },
       {
-        "command": "totvs-developer-studio.inspectorFunctions",
+        "command": "tds-vscode-dg.inspectorFunctions",
         "title": "%tds.package.inspector.function.title%",
         "description": "tds.package.inspector.function.description",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.inspectorObjects",
+        "command": "tds-vscode-dg.inspectorObjects",
         "title": "%tds.package.inspector.object.title%",
         "description": "%tds.package.inspector.object.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.defragRPO",
+        "command": "tds-vscode-dg.defragRPO",
         "title": "%tds.package.defrag.rpo.title%",
         "description": "%tds.package.defrag.rpo.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.rpoCheckIntegrity",
+        "command": "tds-vscode-dg.rpoCheckIntegrity",
         "title": "%tds.package.rpo.check.integrity.title%",
         "description": "%tds.package.rpo.check.integrity.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.revalidateRPO",
+        "command": "tds-vscode-dg.revalidateRPO",
         "title": "%tds.package.revalidate.rpo.title%",
         "description": "%tds.package.revalidate.rpo.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.build.file",
+        "command": "tds-vscode-dg.build.file",
         "title": "%tds.package.build.file.title%",
         "description": "%tds.package.build.file.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.rebuild.file",
+        "command": "tds-vscode-dg.rebuild.file",
         "title": "%tds.package.rebuild.file.title%",
         "description": "%tds.package.rebuild.file.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.build.workspace",
+        "command": "tds-vscode-dg.build.workspace",
         "title": "%tds.package.build.workspace.title%",
         "description": "%tds.package.build.workspace.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.rebuild.workspace",
+        "command": "tds-vscode-dg.rebuild.workspace",
         "title": "%tds.package.rebuild.workspace.title%",
         "description": "%tds.package.rebuild.workspace.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.show.result.build",
+        "command": "tds-vscode-dg.show.result.build",
         "title": "%tds.package.show.result.build.title%",
         "description": "%tds.package.show.result.build.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.build.openEditors",
+        "command": "tds-vscode-dg.build.openEditors",
         "title": "%tds.package.build.openEditors.title%",
         "description": "%tds.package.build.openEditors.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.rebuild.openEditors",
+        "command": "tds-vscode-dg.rebuild.openEditors",
         "title": "%tds.package.rebuild.openEditors.title%",
         "description": "%tds.package.rebuild.openEditors.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.delete.file.fromRPO",
+        "command": "tds-vscode-dg.delete.file.fromRPO",
         "title": "%tds.package.delete.file.fromRPO.title%",
         "description": "%tds.package.delete.file.fromRPO.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.configure.launcher",
+        "command": "tds-vscode-dg.configure.launcher",
         "title": "%tds.package.configure.launcher.title%",
         "description": "%tds.package.configure.launcher.description%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.getProgramName",
+        "command": "tds-vscode-dg.getProgramName",
         "title": "%tds.package.getProgramName.title%",
         "description": "%tds.package.getProgramName.description%"
       },
       {
-        "command": "totvs-developer-studio.getProgramArguments",
+        "command": "tds-vscode-dg.getProgramArguments",
         "title": "Argumentos",
         "description": "Argumentos a serem repassados ao programa que será executado"
       },
       {
-        "command": "totvs-developer-studio.connect",
+        "command": "tds-vscode-dg.connect",
         "title": "%tds.package.connect%",
         "icon": {
           "light": "resources/light/connect.png",
@@ -831,60 +831,60 @@
         }
       },
       {
-        "command": "totvs-developer-studio.reconnect",
+        "command": "tds-vscode-dg.reconnect",
         "title": "%tds.package.reconnect%"
       },
       {
-        "command": "totvs-developer-studio.serverSelection",
+        "command": "tds-vscode-dg.serverSelection",
         "title": "%tds.package.serverSelection%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.selectRpoToken",
+        "command": "tds-vscode-dg.selectRpoToken",
         "title": "%tds.package.selectRpoToken%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.selectRpoToken.enable",
+        "command": "tds-vscode-dg.selectRpoToken.enable",
         "title": "%tds.package.selectRpoToken.enable%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.selectRpoToken.disable",
+        "command": "tds-vscode-dg.selectRpoToken.disable",
         "title": "%tds.package.selectRpoToken.disable%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.inputRpoToken",
+        "command": "tds-vscode-dg.inputRpoToken",
         "title": "%tds.package.inputRpoToken%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.clearRpoToken",
+        "command": "tds-vscode-dg.clearRpoToken",
         "title": "%tds.package.clearRpoToken%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.toggleSaveLocation",
+        "command": "tds-vscode-dg.toggleSaveLocation",
         "title": "%tds.package.toggleSaveLocation%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.toggleUsageInfo",
+        "command": "tds-vscode-dg.toggleUsageInfo",
         "title": "%tds.package.toggleUsageInfo%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.detailUsageInfo",
+        "command": "tds-vscode-dg.detailUsageInfo",
         "title": "%tds.package.detailUsageInfo%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.rename",
+        "command": "tds-vscode-dg.rename",
         "title": "%tds.package.rename%"
       },
       {
-        "command": "totvs-developer-studio.disconnect",
+        "command": "tds-vscode-dg.disconnect",
         "title": "%tds.package.disconnect%",
         "icon": {
           "light": "resources/light/disconnect.png",
@@ -892,7 +892,7 @@
         }
       },
       {
-        "command": "totvs-developer-studio.selectenv",
+        "command": "tds-vscode-dg.selectenv",
         "title": "%tds.package.selectenv%",
         "icon": {
           "light": "resources/light/environment.select.svg",
@@ -901,10 +901,10 @@
       },
       {
         "title": "%tds.package.freshenIndex%",
-        "command": "advpl.freshenIndex"
+        "command": "tds-dg.freshenIndex"
       },
       {
-        "command": "totvs-developer-studio.add",
+        "command": "tds-vscode-dg.add",
         "title": "%tds.package.add%",
         "icon": {
           "light": "resources/light/add.png",
@@ -913,12 +913,12 @@
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.toggleTableSync",
+        "command": "tds-vscode-dg.toggleTableSync",
         "title": "%tds.command.debug.toggleTableSync%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.config",
+        "command": "tds-vscode-dg.config",
         "title": "%tds.package.config%",
         "icon": {
           "light": "resources/light/config.png",
@@ -927,7 +927,7 @@
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.delete",
+        "command": "tds-vscode-dg.delete",
         "title": "%tds.package.delete%",
         "icon": {
           "light": "resources/light/delete.png",
@@ -935,7 +935,7 @@
         }
       },
       {
-        "command": "totvs-developer-studio.delete.environment",
+        "command": "tds-vscode-dg.delete.environment",
         "title": "%tds.package.delete%",
         "icon": {
           "light": "resources/light/delete.png",
@@ -943,82 +943,82 @@
         }
       },
       {
-        "command": "totvs-developer-studio.patchGenerate.fromRPO",
+        "command": "tds-vscode-dg.patchGenerate.fromRPO",
         "title": "%tds.package.patchGenerate.fromRPO%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.patchGenerate.fromFolder",
+        "command": "tds-vscode-dg.patchGenerate.fromFolder",
         "title": "%tds.package.patchGenerate.fromFolder%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.patchGenerate.byDifference",
+        "command": "tds-vscode-dg.patchGenerate.byDifference",
         "title": "%tds.package.patchGenerate.byDifference%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.compile.key",
+        "command": "tds-vscode-dg.compile.key",
         "title": "%tds.package.compile.key%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.logger.on",
+        "command": "tds-vscode-dg.logger.on",
         "title": "%tds.package.logger.on%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.logger.off",
+        "command": "tds-vscode-dg.logger.off",
         "title": "%tds.package.logger.off%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.patchApply",
+        "command": "tds-vscode-dg.patchApply",
         "title": "%tds.package.patchApply%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.patchApply.fromFile",
+        "command": "tds-vscode-dg.patchApply.fromFile",
         "title": "%tds.package.patchApply.fromFile%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.patchInfos.fromFile",
+        "command": "tds-vscode-dg.patchInfos.fromFile",
         "title": "%tds.package.patchInfos.fromFile%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.patchValidate.fromFile",
+        "command": "tds-vscode-dg.patchValidate.fromFile",
         "title": "%tds.package.patchValidate.fromFile%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.welcomePage",
+        "command": "tds-vscode-dg.welcomePage",
         "title": "%tds.package.welcomePage%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.include",
+        "command": "tds-vscode-dg.include",
         "title": "%tds.package.include%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.ws.show",
+        "command": "tds-vscode-dg.ws.show",
         "title": "%tds.package.ws.show%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.templateApply",
+        "command": "tds-vscode-dg.templateApply",
         "title": "%tds.package.templateApply%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.templateApply.fromFile",
+        "command": "tds-vscode-dg.templateApply.fromFile",
         "title": "%tds.package.templateApply.fromFile%",
         "category": "TOTVS"
       },
       {
-        "command": "totvs-developer-studio.run.formatter",
+        "command": "tds-vscode-dg.run.formatter",
         "title": "Format",
         "description": "%tds.package.apply.formatting%",
         "category": "TOTVS",
@@ -1028,17 +1028,17 @@
         }
       },
       {
-        "command": "totvs-developer-studio.tdsreplay.configure.launcher",
+        "command": "tds-vscode-dg.tdsreplay.configure.launcher",
         "title": "%tds.package.configure.launcher.title%",
         "category": "TDSReplay"
       },
       {
-        "command": "totvs-developer-studio.tdsreplay.webview.timeLine",
+        "command": "tds-vscode-dg.tdsreplay.webview.timeLine",
         "title": "%tds.package.OpenTimeLineWebview%",
         "category": "TDSReplay"
       },
       {
-        "command": "tds-monitor.open-monitor-view",
+        "command": "tds-dg-monitor.open-monitor-view",
         "title": "%tds-monitor.open-monitor-view%",
         "category": "TOTVSMonitor",
         "icon": {
@@ -1047,8 +1047,8 @@
         }
       },
       {
-        "command": "totvs-developer-studio.open-loadrpoinfo-view",
-        "title": "%totvs-developer-studio.open-rpoinfo%",
+        "command": "tds-vscode-dg.open-loadrpoinfo-view",
+        "title": "%tds-vscode-dg.open-rpoinfo%",
         "category": "TOTVS",
         "icon": {
           "light": "resources/light/rpolog.png",
@@ -1058,24 +1058,24 @@
     ],
     "keybindings": [
       {
-        "command": "totvs-developer-studio.rebuild.file",
+        "command": "tds-vscode-dg.rebuild.file",
         "key": "ctrl+f9",
         "mac": "cmd+f9",
         "when": "editorTextFocus"
       },
       {
-        "command": "totvs-developer-studio.build.file",
+        "command": "tds-vscode-dg.build.file",
         "key": "ctrl+shift+f9",
         "mac": "cmd+shift+f9",
         "when": "editorTextFocus"
       },
       {
-        "command": "totvs-developer-studio.rebuild.openEditors",
+        "command": "tds-vscode-dg.rebuild.openEditors",
         "key": "ctrl+f10",
         "mac": "cmd+f10"
       },
       {
-        "command": "totvs-developer-studio.build.openEditors",
+        "command": "tds-vscode-dg.build.openEditors",
         "key": "ctrl+shift+f10",
         "mac": "cmd+shift+f10"
       }
@@ -1093,7 +1093,7 @@
     ],
     "debuggers": [
       {
-        "type": "totvs_language_debug",
+        "type": "tds_dg_language_debug",
         "label": "%tds.package.totvs_language_debug%",
         "configurationAttributes": {
           "launch": {
@@ -1211,7 +1211,7 @@
         },
         "initialConfigurations": [
           {
-            "type": "totvs_language_debug",
+            "type": "tds_dg_language_debug",
             "request": "launch",
             "name": "%tds.package.totvs_language_debug%",
             "program": "${command:AskForProgramName}",
@@ -1225,15 +1225,15 @@
           }
         ],
         "variables": {
-          "AskForProgramName": "totvs-developer-studio.getProgramName",
-          "AskForProgramArguments": "totvs-developer-studio.getProgramArguments"
+          "AskForProgramName": "tds-vscode-dg.getProgramName",
+          "AskForProgramArguments": "tds-vscode-dg.getProgramArguments"
         },
         "configurationSnippets": [
           {
             "label": "%tds.package.totvs_language_debug%",
             "description": "Configuration for debugging a user selected AdvPL/4GL file using _SmartClient_.",
             "body": {
-              "type": "totvs_language_debug",
+              "type": "tds_dg_language_debug",
               "request": "launch",
               "name": "${1:Smart Client Debug}",
               "program": "^\"\\${command:AskForProgramName}\"",
@@ -1250,7 +1250,7 @@
             "label": "%tds.package.totvs_language_debug_with_arguments%",
             "description": "Configuration for debugging a fixed AdvPL/4GL file and user arguments using _SmartClient_.",
             "body": {
-              "type": "totvs_language_debug",
+              "type": "tds_dg_language_debug",
               "request": "launch",
               "name": "${1:Smart Client Debug}",
               "program": "${2:program}",
@@ -1269,7 +1269,7 @@
         ]
       },
       {
-        "type": "totvs_tdsreplay_debug",
+        "type": "tds_dg_tdsreplay_debug",
         "label": "%tds.package.tdsreplay.debug%",
         "configurationAttributes": {
           "launch": {
@@ -1338,7 +1338,7 @@
         },
         "initialConfigurations": [
           {
-            "type": "totvs_tdsreplay_debug",
+            "type": "tds_dg_tdsreplay_debug",
             "request": "launch",
             "name": "${1:%tds.package.tdsreplay.debug%}",
             "cwb": "${workspaceFolder}",
@@ -1354,7 +1354,7 @@
             "label": "%tds.package.tdsreplay.debug%",
             "description": "A new configuration for debugging a TDS Replay file.",
             "body": {
-              "type": "totvs_tdsreplay_debug",
+              "type": "tds_dg_tdsreplay_debug",
               "request": "launch",
               "name": "${1:TDS Replay}",
               "cwb": "${workspaceFolder}",
@@ -1368,7 +1368,7 @@
         ]
       },
       {
-        "type": "totvs_language_web_debug",
+        "type": "tds_dg_language_web_debug",
         "label": "%tds.package.totvs.language.debug.web%",
         "configurationAttributes": {
           "launch": {
@@ -1497,7 +1497,7 @@
         },
         "initialConfigurations": [
           {
-            "type": "totvs_language_web_debug",
+            "type": "tds_dg_language_web_debug",
             "request": "launch",
             "name": "%tds.package.totvs_language_debug%",
             "program": "${command:AskForProgramName}",
@@ -1510,15 +1510,15 @@
           }
         ],
         "variables": {
-          "AskForProgramName": "totvs-developer-studio.getProgramName",
-          "AskForProgramArguments": "totvs-developer-studio.getProgramArguments"
+          "AskForProgramName": "tds-vscode-dg.getProgramName",
+          "AskForProgramArguments": "tds-vscode-dg.getProgramArguments"
         },
         "configurationSnippets": [
           {
             "label": "%tds.package.totvs_language_debug.web%",
             "description": "%tds.package.configurationSnippets.description.web%",
             "body": {
-              "type": "totvs_language_web_debug",
+              "type": "tds_dg_language_web_debug",
               "request": "launch",
               "name": "${1:Smart Client Web Debug}",
               "program": "^\"\\${command:AskForProgramName}\"",
@@ -1532,16 +1532,16 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "totvs-plataform",
+          "id": "tds-dg-platform",
           "title": "TOTVS",
           "icon": "icons/totvs24x24.png"
         }
       ]
     },
     "views": {
-      "totvs-plataform": [
+      "tds-dg-platform": [
         {
-          "id": "totvs_server",
+          "id": "tds_dg_server",
           "name": "%tds.package.server.view%",
           "icon": "icons/totvs24x24.png"
         }
@@ -1551,272 +1551,272 @@
       "explorer/context": [
         {
           "when": "explorerResourceIsFolder ",
-          "command": "totvs-developer-studio.rebuild.workspace",
-          "alt": "totvs-developer-studio.build.workspace",
+          "command": "tds-vscode-dg.rebuild.workspace",
+          "alt": "tds-vscode-dg.build.workspace",
           "group": "totvsBuild@1"
         },
         {
-          "command": "totvs-developer-studio.rebuild.file",
-          "alt": "totvs-developer-studio.build.file",
+          "command": "tds-vscode-dg.rebuild.file",
+          "alt": "tds-vscode-dg.build.file",
           "group": "totvsBuild@3"
         },
         {
-          "command": "totvs-developer-studio.rebuild.openEditors",
-          "alt": "totvs-developer-studio.build.openEditors",
+          "command": "tds-vscode-dg.rebuild.openEditors",
+          "alt": "tds-vscode-dg.build.openEditors",
           "group": "totvsBuild@4"
         },
         {
           "when": "resourceLangId == totvs_patch",
-          "command": "totvs-developer-studio.patchApply.fromFile",
+          "command": "tds-vscode-dg.patchApply.fromFile",
           "group": "totvsBuild@5"
         },
         {
           "when": "resourceLangId == totvs_patch",
-          "command": "totvs-developer-studio.patchInfos.fromFile",
+          "command": "tds-vscode-dg.patchInfos.fromFile",
           "group": "totvsBuild@9"
         },
         {
           "when": "resourceLangId == totvs_patch",
-          "command": "totvs-developer-studio.patchValidate.fromFile",
+          "command": "tds-vscode-dg.patchValidate.fromFile",
           "group": "totvsBuild@8"
         },
         {
-          "command": "totvs-developer-studio.delete.file.fromRPO",
+          "command": "tds-vscode-dg.delete.file.fromRPO",
           "group": "totvsBuild@6"
         },
         {
           "when": "resourceLangId == totvs_template",
-          "command": "totvs-developer-studio.templateApply.fromFile",
+          "command": "tds-vscode-dg.templateApply.fromFile",
           "group": "totvsBuild@5"
         },
         {
           "when": "explorerResourceIsFolder",
-          "command": "totvs-developer-studio.patchGenerate.fromFolder",
+          "command": "tds-vscode-dg.patchGenerate.fromFolder",
           "group": "totvsBuild@7"
         },
         {
           "when": "explorerResourceIsFolder",
-          "command": "totvs-developer-studio.run.formatter",
+          "command": "tds-vscode-dg.run.formatter",
           "group": "totvsSource@1"
         },
         {
           "when": "resourceLangId == advpl",
-          "command": "totvs-developer-studio.run.formatter",
+          "command": "tds-vscode-dg.run.formatter",
           "group": "totvsSource@2"
         },
         {
           "when": "resourceLangId == 4gl",
-          "command": "totvs-developer-studio.run.formatter",
+          "command": "tds-vscode-dg.run.formatter",
           "group": "totvsSource@2"
         }
       ],
       "view/item/context": [
         {
-          "command": "totvs-developer-studio.connect",
-          "when": "view == totvs_server && viewItem == serverItemNotConnected",
+          "command": "tds-vscode-dg.connect",
+          "when": "view == tds_dg_server && viewItem == serverItemNotConnected",
           "group": "AAtotvsServer@1"
         },
         {
-          "command": "totvs-developer-studio.reconnect",
-          "when": "view == totvs_server && viewItem == serverItemNotConnected",
+          "command": "tds-vscode-dg.reconnect",
+          "when": "view == tds_dg_server && viewItem == serverItemNotConnected",
           "group": "AAtotvsServer@1"
         },
         {
-          "command": "totvs-developer-studio.disconnect",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.disconnect",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "AAtotvsServer@2"
         },
         {
-          "command": "tds-monitor.open-monitor-view",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-dg-monitor.open-monitor-view",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "AAtotvsServer@3"
         },
         {
-          "command": "totvs-developer-studio.patchGenerate.fromRPO",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.patchGenerate.fromRPO",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "CtotvsPatch@1"
         },
         {
-          "command": "totvs-developer-studio.patchGenerate.byDifference",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.patchGenerate.byDifference",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "CtotvsPatch@2"
         },
         {
-          "command": "totvs-developer-studio.patchApply",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.patchApply",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "CtotvsPatch@3"
         },
         {
-          "command": "totvs-developer-studio.open-loadrpoinfo-view",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.open-loadrpoinfo-view",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "CtotvsPatch@4"
         },
         {
-          "command": "totvs-developer-studio.inspectorObjects",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.inspectorObjects",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "DtotvsInspect@1"
         },
         {
-          "command": "totvs-developer-studio.inspectorFunctions",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.inspectorFunctions",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "DtotvsInspect@2"
         },
         {
-          "command": "totvs-developer-studio.selectenv",
-          "when": "view == totvs_server && viewItem == envSectionNotCurrent",
+          "command": "tds-vscode-dg.selectenv",
+          "when": "view == tds_dg_server && viewItem == envSectionNotCurrent",
           "group": "inline@2"
         },
         {
-          "command": "totvs-developer-studio.delete.environment",
-          "when": "view == totvs_server && viewItem == envSectionNotCurrent",
+          "command": "tds-vscode-dg.delete.environment",
+          "when": "view == tds_dg_server && viewItem == envSectionNotCurrent",
           "group": "inline@1"
         },
         {
-          "command": "totvs-developer-studio.add",
-          "when": "view == totvs_server",
+          "command": "tds-vscode-dg.add",
+          "when": "view == tds_dg_server",
           "group": "ABtotvsServer@3"
         },
         {
-          "command": "totvs-developer-studio.config",
-          "when": "view == totvs_server",
+          "command": "tds-vscode-dg.config",
+          "when": "view == tds_dg_server",
           "group": "XtotvsServer@1"
         },
         {
-          "command": "totvs-developer-studio.rename",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.rename",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "ABtotvsServer@4"
         },
         {
-          "command": "totvs-developer-studio.compile.key",
-          "when": "view == totvs_server",
+          "command": "tds-vscode-dg.compile.key",
+          "when": "view == tds_dg_server",
           "group": "BBtotvsCompileKey@1"
         },
         {
-          "command": "totvs-developer-studio.include",
-          "when": "view == totvs_server",
+          "command": "tds-vscode-dg.include",
+          "when": "view == tds_dg_server",
           "group": "BAtotvsInclude@1"
         },
         {
-          "command": "totvs-developer-studio.delete",
-          "when": "view == totvs_server && viewItem == serverItemNotConnected",
+          "command": "tds-vscode-dg.delete",
+          "when": "view == tds_dg_server && viewItem == serverItemNotConnected",
           "group": "inline@1"
         },
         {
-          "command": "totvs-developer-studio.connect",
-          "when": "view == totvs_server && viewItem == serverItemNotConnected",
+          "command": "tds-vscode-dg.connect",
+          "when": "view == tds_dg_server && viewItem == serverItemNotConnected",
           "group": "inline@2"
         },
         {
-          "command": "totvs-developer-studio.disconnect",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.disconnect",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "inline@2"
         },
         {
-          "command": "totvs-developer-studio.defragRPO",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.defragRPO",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "EtotvsRPO@1"
         },
         {
-          "command": "totvs-developer-studio.rpoCheckIntegrity",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.rpoCheckIntegrity",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "EtotvsRPO@2"
         },
         {
-          "command": "totvs-developer-studio.revalidateRPO",
-          "when": "view == totvs_server && viewItem == serverItem && tds-vscode.isServerP20OrGreater",
+          "command": "tds-vscode-dg.revalidateRPO",
+          "when": "view == tds_dg_server && viewItem == serverItem && tds-vscode-dg.isServerP20OrGreater",
           "group": "EtotvsRPO@3"
         },
         {
-          "command": "totvs-developer-studio.delete.file.fromRPO",
-          "when": "view == totvs_server && viewItem == serverItem",
+          "command": "tds-vscode-dg.delete.file.fromRPO",
+          "when": "view == tds_dg_server && viewItem == serverItem",
           "group": "EtotvsRPO@4"
         }
       ],
       "view/title": [
         {
-          "command": "totvs-developer-studio.add",
-          "when": "view == totvs_server",
+          "command": "tds-vscode-dg.add",
+          "when": "view == tds_dg_server",
           "group": "navigation"
         },
         {
-          "command": "tds-monitor.open-monitor-view",
-          "when": "view == totvs_server",
+          "command": "tds-dg-monitor.open-monitor-view",
+          "when": "view == tds_dg_server",
           "group": "navigation"
         },
         {
-          "command": "totvs-developer-studio.config",
-          "when": "view == totvs_server",
+          "command": "tds-vscode-dg.config",
+          "when": "view == tds_dg_server",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "totvs-developer-studio.selectRpoToken"
+          "command": "tds-vscode-dg.selectRpoToken"
         },
         {
-          "command": "totvs-developer-studio.inputRpoToken"
+          "command": "tds-vscode-dg.inputRpoToken"
         },
         {
-          "command": "totvs-developer-studio.clearRpoToken"
+          "command": "tds-vscode-dg.clearRpoToken"
         },
         {
-          "command": "totvs-developer-studio.show.result.build",
+          "command": "tds-vscode-dg.show.result.build",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.patchGenerate.fromFolder",
+          "command": "tds-vscode-dg.patchGenerate.fromFolder",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.patchValidate.fromFile",
+          "command": "tds-vscode-dg.patchValidate.fromFile",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.patchInfos.fromFile",
+          "command": "tds-vscode-dg.patchInfos.fromFile",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.selectenv",
+          "command": "tds-vscode-dg.selectenv",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.disconnect",
+          "command": "tds-vscode-dg.disconnect",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.connect",
+          "command": "tds-vscode-dg.connect",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.reconnect",
+          "command": "tds-vscode-dg.reconnect",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.rename",
+          "command": "tds-vscode-dg.rename",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.getProgramName",
+          "command": "tds-vscode-dg.getProgramName",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.getProgramArguments",
+          "command": "tds-vscode-dg.getProgramArguments",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.delete.file.fromRPO",
+          "command": "tds-vscode-dg.delete.file.fromRPO",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.getDAP",
+          "command": "tds-vscode-dg.getDAP",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.welcomePage",
+          "command": "tds-vscode-dg.welcomePage",
           "when": "1 == 0"
         },
         {
-          "command": "totvs-developer-studio.tdsreplay.webview.timeLine",
+          "command": "tds-vscode-dg.tdsreplay.webview.timeLine",
           "when": "debugType == totvs_tdsreplay_debug"
         }
       ]

@@ -125,7 +125,7 @@ export class MonitorLoader {
   }
 
   constructor(context: vscode.ExtensionContext) {
-    const ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+    const ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
     this._extensionPath = ext.extensionPath;
     this._context = context;
 
@@ -253,11 +253,11 @@ export class MonitorLoader {
 
   private registerCommands() {
     vscode.commands.getCommands(false).then((commands: string[]) => {
-      let index = commands.indexOf("_totvs-developer-studio.clearMonitorPanel");
+      let index = commands.indexOf("_tds-vscode-dg.clearMonitorPanel");
       if (index === -1) {
         this._disposables.push(
           vscode.commands.registerCommand(
-            "_totvs-developer-studio.clearMonitorPanel",
+            "_tds-vscode-dg.clearMonitorPanel",
             () => {
               this.clearPanel();
               vscode.window.setStatusBarMessage("");
@@ -266,11 +266,11 @@ export class MonitorLoader {
         );
       }
 
-      index = commands.indexOf("_totvs-developer-studio.updateMonitorPanel");
+      index = commands.indexOf("_tds-vscode-dg.updateMonitorPanel");
       if (index === -1) {
         this._disposables.push(
           vscode.commands.registerCommand(
-            "_totvs-developer-studio.updateMonitorPanel",
+            "_tds-vscode-dg.updateMonitorPanel",
             () => {
               if (!this._isDisposed) {
                 if (this.monitorServer === null) {

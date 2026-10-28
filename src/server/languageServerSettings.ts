@@ -149,7 +149,7 @@ export function getModifiedLanguageServerSettings(): any[] {
   }
 
   if (settings.length > 0) {
-    let ext = vscode.extensions.getExtension("TOTVS.tds-vscode");
+    let ext = vscode.extensions.getExtension("paulodrjr.tds-vscode-dg");
     const version: string = ext.packageJSON["version"];
     settings.push({
       scope: "extension",

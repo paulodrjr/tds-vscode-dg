@@ -24,7 +24,7 @@ let dapArgs: string[] = [];
 
 export function getDAP() {
   let pathDAP = "";
-  let ext = extensions.getExtension("TOTVS.tds-vscode");
+  let ext = extensions.getExtension("paulodrjr.tds-vscode-dg");
   if (ext) {
     if (process.platform === "win32") {
       pathDAP = path.join(
