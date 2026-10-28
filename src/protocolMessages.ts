@@ -102,7 +102,7 @@ export function sendDisconnectRequest(
     .sendRequest("$totvsserver/disconnect", {
       disconnectInfo: {
         connectionToken: connectedServerItem.token,
-        serverName: connectedServerItem.label,
+        serverName: connectedServerItem.name || connectedServerItem.label,
       },
     })
     .then(
