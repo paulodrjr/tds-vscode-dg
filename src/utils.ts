@@ -1156,17 +1156,22 @@ function getServersConfig() {
  * @param JSONServerInfo
  */
 function persistServersInfo(JSONServerInfo) {
-  let fs = require("fs");
-  fs.writeFileSync(
-    ServersConfig.getServerConfigFile(),
-    JSON.stringify(JSONServerInfo, null, "\t"),
-    (err) => {
-      if (err) {
-        vscode.window.showErrorMessage(err);
-        console.error(err);
+  const target = ServersConfig.getServerConfigFile();
+  const temporary = target + "." + process.pid + ".tmp";
+  try {
+    fs.writeFileSync(temporary, JSON.stringify(JSONServerInfo, null, "\t"), "utf8");
+    fs.renameSync(temporary, target);
+  } catch (error) {
+    try {
+      if (fs.existsSync(temporary)) {
+        fs.unlinkSync(temporary);
       }
+    } catch (cleanupError) {
+      console.error("Failed to clean temporary servers configuration:", cleanupError);
     }
-  );
+    console.error("Failed to persist servers configuration:", error);
+    throw error;
+  }
 }
 
 export class LaunchConfig {

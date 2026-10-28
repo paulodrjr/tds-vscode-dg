@@ -32,6 +32,7 @@ class ServerItemProvider
   private _connectedServerItem: ServerItem | undefined = undefined;
 
   private configFilePath: string = "";
+  private configWatcher: fs.FSWatcher | undefined;
 
   constructor() {
     // check if there is an open folder
@@ -160,15 +161,16 @@ class ServerItemProvider
     let serversJson: string = ServersConfig.getServerConfigFile();
 
     if (this.configFilePath !== serversJson) {
-      if (this.configFilePath) {
-        fs.unwatchFile(this.configFilePath);
+      if (this.configWatcher) {
+        this.configWatcher.close();
+        this.configWatcher = undefined;
       }
 
       if (!fs.existsSync(serversJson)) {
         ServersConfig.createServerConfig();
       }
 
-      fs.watch(serversJson, { encoding: "buffer" }, (eventType, filename) => {
+      this.configWatcher = fs.watch(serversJson, { encoding: "buffer" }, (eventType, filename) => {
         if (filename && eventType === "change") {
           updateStatusBarItems();
           this.localServerItems = this.setConfigWithServerConfig();
