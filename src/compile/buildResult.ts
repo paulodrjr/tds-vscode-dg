@@ -21,7 +21,7 @@ export function commandShowBuildTableResult(
 ) {
   const extensionPath = context.extensionPath;
   const currentPanel = vscode.window.createWebviewPanel(
-    "tds-vscode-dg.compile.result",
+    "totvs-developer-studio.compile.result",
     "Compilation Result",
     vscode.ViewColumn.One,
     {

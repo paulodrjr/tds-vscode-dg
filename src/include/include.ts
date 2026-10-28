@@ -23,7 +23,7 @@ export default function showInclude(context: vscode.ExtensionContext) {
 		currentPanel.reveal();
 	} else {
 		currentPanel = vscode.window.createWebviewPanel(
-			'tds-vscode-dg.include',
+			'totvs-developer-studio.include',
 			vscode.l10n.t("Global Include"),
 			vscode.ViewColumn.One,
 			{

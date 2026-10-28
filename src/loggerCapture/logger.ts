@@ -66,7 +66,7 @@ export function onCaptureLoggers(context: ExtensionContext) {
 				});
 
 				logStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-				logStatusBarItem.command = "tds-vscode-dg.logger.off";
+				logStatusBarItem.command = "totvs-developer-studio.logger.off";
 				const str: string = vscode.l10n.t("Finish log capture.");
 				logStatusBarItem.tooltip = str;
 				context.subscriptions.push(logStatusBarItem);

@@ -316,7 +316,7 @@ function verifyCompileResult(response) {
       .then((clicked) => {
         if (clicked === textYes) {
           vscode.commands.executeCommand(
-            "tds-vscode-dg.show.result.build",
+            "totvs-developer-studio.show.result.build",
             response
           );
         } else if (clicked === textNoAsk) {

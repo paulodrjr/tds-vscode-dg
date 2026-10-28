@@ -14,7 +14,7 @@ export default class ShowProgressControllerDialog {
 
 	initializePage(context: vscode.ExtensionContext) {
 		currentPanel = vscode.window.createWebviewPanel(
-			'tds-vscode-dg.showProgress',
+			'totvs-developer-studio.showProgress',
 			vscode.l10n.t("Progress..."),
 			vscode.ViewColumn.One,
 			{

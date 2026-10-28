@@ -27,7 +27,7 @@ export default function showWSPage(context: vscode.ExtensionContext) {
 		let server = ServersConfig.getCurrentServer();
 		if (server) {
 			currentPanel = vscode.window.createWebviewPanel(
-				'tds-vscode-dg.ws.show',
+				'totvs-developer-studio.ws.show',
 				vscode.l10n.t("Generate WS Protheus"),
 				vscode.ViewColumn.One,
 				{

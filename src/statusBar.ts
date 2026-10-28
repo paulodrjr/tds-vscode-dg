@@ -36,7 +36,7 @@ function initStatusBarItem(context: vscode.ExtensionContext) {
     vscode.StatusBarAlignment.Left,
     priorityTotvsStatusBarItem
   );
-  serverStatusBarItem.command = "tds-vscode-dg.serverSelection";
+  serverStatusBarItem.command = "totvs-developer-studio.serverSelection";
   serverStatusBarItem.text = `$(gear~spin) ${vscode.l10n.t("(initializing)")}`;
 
   context.subscriptions.push(
@@ -68,7 +68,7 @@ function initSaveLocationBarItem(context: vscode.ExtensionContext) {
     vscode.StatusBarAlignment.Left,
     prioritySaveLocationBarItem
   );
-  saveLocationBarItem.command = "tds-vscode-dg.toggleSaveLocation";
+  saveLocationBarItem.command = "totvs-developer-studio.toggleSaveLocation";
 
   context.subscriptions.push(saveLocationBarItem);
 
@@ -94,7 +94,7 @@ function initRpoTokenStatusBarItem(context: vscode.ExtensionContext) {
     vscode.StatusBarAlignment.Left,
     priorityRpoTokenStatusBarItem
   );
-  rpoTokenStatusBarItem.command = "tds-vscode-dg.selectRpoToken";
+  rpoTokenStatusBarItem.command = "totvs-developer-studio.selectRpoToken";
 
   updateRpoTokenStatusBarItem();
 }
@@ -193,7 +193,7 @@ function initUsageBarItem(context: vscode.ExtensionContext): void {
     vscode.StatusBarAlignment.Left,
     priorityusageBarItem
   );
-  usageBarItem.command = "tds-vscode-dg.toggleUsageInfo";
+  usageBarItem.command = "totvs-developer-studio.toggleUsageInfo";
 
   context.subscriptions.push(usageBarItem);
   updateUsageBarItem();
@@ -237,7 +237,7 @@ function buildTooltipBusyInfo(args: IUsageStatusInfo): vscode.MarkdownString {
     });
   }
 
-  // text.appendMarkdown("\n\nVer [detalhes telemetria](command:tds-vscode-dg.detailUsageInfo)");
+  // text.appendMarkdown("\n\nVer [detalhes telemetria](command:totvs-developer-studio.detailUsageInfo)");
   text.appendMarkdown("\n\n_Click_ no ícone abaixo para ativar/desativar");
 
   text.isTrusted = true;
