@@ -42,3 +42,40 @@ export function sendPatchGenerateMessage(server, patchMaster, patchDest, patchTy
 		vscode.window.showErrorMessage(err.message);
 	});
 }
+
+/**
+ * Patch request used by "Compile and generate patch". Unlike the legacy helper,
+ * it propagates failures and never reports successful generation on rejection.
+ */
+export async function sendPatchGenerateMessageStrict(
+  server: any, patchDest: string, patchName: string, filesPath: string[]
+): Promise<PatchResult> {
+  const response = await languageClient.sendRequest<PatchResult>(
+    "$totvsserver/patchGenerate",
+    {
+      patchGenerateInfo: {
+        connectionToken: server.token,
+        authorizationToken: ServersConfig.getAuthorizationToken(server),
+        environment: server.environment,
+        patchMaster: "",
+        patchDest: patchDest,
+        isLocal: true,
+        patchType: 3,
+        name: patchName,
+        patchFiles: filesPath,
+      },
+    }
+  );
+
+  if (!response) throw new Error("The Language Server returned no patch-generation result.");
+  if (response.returnCode === 40840) {
+    ServersConfig.removeExpiredAuthorization();
+  }
+  if (response.returnCode !== 0) {
+    throw new Error(
+      "Patch generation failed (code " + response.returnCode + "). " +
+      (response.files || "Consult TOTVS LS output for details.")
+    );
+  }
+  return response;
+}
