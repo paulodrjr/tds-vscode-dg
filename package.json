@@ -732,85 +732,85 @@
         "command": "tds-vscode-dg.inspectorFunctions",
         "title": "%tds.package.inspector.function.title%",
         "description": "tds.package.inspector.function.description",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.inspectorObjects",
         "title": "%tds.package.inspector.object.title%",
         "description": "%tds.package.inspector.object.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.defragRPO",
         "title": "%tds.package.defrag.rpo.title%",
         "description": "%tds.package.defrag.rpo.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.rpoCheckIntegrity",
         "title": "%tds.package.rpo.check.integrity.title%",
         "description": "%tds.package.rpo.check.integrity.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.revalidateRPO",
         "title": "%tds.package.revalidate.rpo.title%",
         "description": "%tds.package.revalidate.rpo.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.build.file",
         "title": "%tds.package.build.file.title%",
         "description": "%tds.package.build.file.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.rebuild.file",
         "title": "%tds.package.rebuild.file.title%",
         "description": "%tds.package.rebuild.file.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.build.workspace",
         "title": "%tds.package.build.workspace.title%",
         "description": "%tds.package.build.workspace.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.rebuild.workspace",
         "title": "%tds.package.rebuild.workspace.title%",
         "description": "%tds.package.rebuild.workspace.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.show.result.build",
         "title": "%tds.package.show.result.build.title%",
         "description": "%tds.package.show.result.build.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.build.openEditors",
         "title": "%tds.package.build.openEditors.title%",
         "description": "%tds.package.build.openEditors.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.rebuild.openEditors",
         "title": "%tds.package.rebuild.openEditors.title%",
         "description": "%tds.package.rebuild.openEditors.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.delete.file.fromRPO",
         "title": "%tds.package.delete.file.fromRPO.title%",
         "description": "%tds.package.delete.file.fromRPO.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.configure.launcher",
         "title": "%tds.package.configure.launcher.title%",
         "description": "%tds.package.configure.launcher.description%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.getProgramName",
@@ -837,47 +837,47 @@
       {
         "command": "tds-vscode-dg.serverSelection",
         "title": "%tds.package.serverSelection%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.selectRpoToken",
         "title": "%tds.package.selectRpoToken%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.selectRpoToken.enable",
         "title": "%tds.package.selectRpoToken.enable%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.selectRpoToken.disable",
         "title": "%tds.package.selectRpoToken.disable%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.inputRpoToken",
         "title": "%tds.package.inputRpoToken%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.clearRpoToken",
         "title": "%tds.package.clearRpoToken%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.toggleSaveLocation",
         "title": "%tds.package.toggleSaveLocation%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.toggleUsageInfo",
         "title": "%tds.package.toggleUsageInfo%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.detailUsageInfo",
         "title": "%tds.package.detailUsageInfo%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.rename",
@@ -910,12 +910,12 @@
           "light": "resources/light/add.png",
           "dark": "resources/dark/add.png"
         },
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.toggleTableSync",
         "title": "%tds.command.debug.toggleTableSync%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.config",
@@ -924,7 +924,7 @@
           "light": "resources/light/config.png",
           "dark": "resources/dark/config.png"
         },
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.delete",
@@ -945,83 +945,83 @@
       {
         "command": "tds-vscode-dg.patchGenerate.fromRPO",
         "title": "%tds.package.patchGenerate.fromRPO%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.patchGenerate.fromFolder",
         "title": "%tds.package.patchGenerate.fromFolder%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.patchGenerate.byDifference",
         "title": "%tds.package.patchGenerate.byDifference%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.compile.key",
         "title": "%tds.package.compile.key%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.logger.on",
         "title": "%tds.package.logger.on%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.logger.off",
         "title": "%tds.package.logger.off%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.patchApply",
         "title": "%tds.package.patchApply%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.patchApply.fromFile",
         "title": "%tds.package.patchApply.fromFile%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.patchInfos.fromFile",
         "title": "%tds.package.patchInfos.fromFile%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.patchValidate.fromFile",
         "title": "%tds.package.patchValidate.fromFile%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.welcomePage",
         "title": "%tds.package.welcomePage%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.include",
         "title": "%tds.package.include%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.ws.show",
         "title": "%tds.package.ws.show%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.templateApply",
         "title": "%tds.package.templateApply%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.templateApply.fromFile",
         "title": "%tds.package.templateApply.fromFile%",
-        "category": "TOTVS"
+        "category": "TDS DG"
       },
       {
         "command": "tds-vscode-dg.run.formatter",
         "title": "Format",
         "description": "%tds.package.apply.formatting%",
-        "category": "TOTVS",
+        "category": "TDS DG",
         "icon": {
           "light": "resources/light/formatter.png",
           "dark": "resources/dark/formatter.png"
@@ -1049,37 +1049,14 @@
       {
         "command": "tds-vscode-dg.open-loadrpoinfo-view",
         "title": "%tds-vscode-dg.open-rpoinfo%",
-        "category": "TOTVS",
+        "category": "TDS DG",
         "icon": {
           "light": "resources/light/rpolog.png",
           "dark": "resources/dark/rpolog.png"
         }
       }
     ],
-    "keybindings": [
-      {
-        "command": "tds-vscode-dg.rebuild.file",
-        "key": "ctrl+f9",
-        "mac": "cmd+f9",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "tds-vscode-dg.build.file",
-        "key": "ctrl+shift+f9",
-        "mac": "cmd+shift+f9",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "tds-vscode-dg.rebuild.openEditors",
-        "key": "ctrl+f10",
-        "mac": "cmd+f10"
-      },
-      {
-        "command": "tds-vscode-dg.build.openEditors",
-        "key": "ctrl+shift+f10",
-        "mac": "cmd+shift+f10"
-      }
-    ],
+    "keybindings": [],
     "breakpoints": [
       {
         "language": "advpl"
@@ -1533,7 +1510,7 @@
       "activitybar": [
         {
           "id": "tds-dg-platform",
-          "title": "TOTVS",
+          "title": "TDS DG",
           "icon": "icons/totvs24x24.png"
         }
       ]
