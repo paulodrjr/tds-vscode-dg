@@ -31,6 +31,8 @@ jobs:
         run: node test/unit/compileLogParser.cjs
       - name: Test OutputChannel modal alerts
         run: node test/unit/compileAlertMonitor.cjs
+      - name: Test heartbeat and reconnection policy
+        run: node test/unit/connectionHeartbeat.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:
