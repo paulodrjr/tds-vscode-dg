@@ -59,14 +59,20 @@ export function describeMissingConnectionToken(method: string): string {
  */
 const RECENT_METHOD_LIMIT = 12;
 const RECENT_METHOD_AGE_MS = 20000;
-const recentMethods: Array<{ name: string; at: number; hasToken: boolean }> = [];
+const recentMethods: Array<{
+  name: string; at: number; hasToken: boolean; required: boolean
+}> = [];
 
-export function recordTotvsRpc(method: string, valid: boolean): void {
+export function recordTotvsRpc(
+  method: string, valid: boolean, required = true
+): void {
   if (typeof method !== "string" ||
       (!method.startsWith("$totvsserver/") && !method.startsWith("$totvsmonitor/"))) {
     return;
   }
-  recentMethods.push({ name: method, at: Date.now(), hasToken: valid });
+  recentMethods.push({
+    name: method, at: Date.now(), hasToken: valid, required
+  });
   if (recentMethods.length > RECENT_METHOD_LIMIT) {
     recentMethods.splice(0, recentMethods.length - RECENT_METHOD_LIMIT);
   }
@@ -77,6 +83,7 @@ export function recentTotvsRpcSummary(): string {
   const now = Date.now();
   const active = recentMethods.filter(item => now - item.at <= RECENT_METHOD_AGE_MS);
   if (!active.length) return "Nenhuma requisição TOTVS recente deste cliente.";
-  return active.map(item => item.name +
-    " (" + (item.hasToken ? "token informado" : "token ausente") + ")").join("; ");
+  return active.map(item => item.name + " (" +
+    (!item.required ? "token não exigido" :
+      item.hasToken ? "token informado" : "token ausente") + ")").join("; ");
 }

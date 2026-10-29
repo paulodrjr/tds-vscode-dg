@@ -85,6 +85,7 @@ async function main() {
   const summary = diagnostics.recentTotvsRpcSummary();
   assert.match(summary, /\$totvsserver\/serverInformations/);
   assert.match(summary, /\$totvsmonitor\/getUsers/);
+  assert.match(summary, /\$totvsserver\/connect \(token não exigido\)/);
   assert.ok(!summary.includes("MY_SECRET"),
     "recent request diagnostics must not reveal token values");
 
