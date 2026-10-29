@@ -5,7 +5,8 @@ import {
 } from "vscode-languageclient/node";
 import {
   checkConnectionToken,
-  describeMissingConnectionToken
+  describeMissingConnectionToken,
+  recordTotvsRpc
 } from "./server/connectionTokenGuard";
 
 export class TotvsLanguageClientA extends LanguageClient {
@@ -38,6 +39,7 @@ export class TotvsLanguageClientA extends LanguageClient {
     this.sendRequest = ((type: any, ...args: any[]) => {
       const method: string = typeof type === "string" ? type : type?.method;
       const check = checkConnectionToken(method, args[0]);
+      recordTotvsRpc(method, check.valid);
       if (!check.valid) {
         const diagnostic = describeMissingConnectionToken(check.operation);
         const caller = new Error().stack?.split("\n").slice(2, 5)
