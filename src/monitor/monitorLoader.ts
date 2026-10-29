@@ -105,6 +105,9 @@ export class MonitorLoader {
   private _disposables: vscode.Disposable[] = [];
   private _isDisposed: boolean = false;
   private _monitorServer: any = null;
+  private _monitorGeneration = 0;
+  private _monitorConnecting = false;
+  private _monitorTarget?: { id: string; environment: string; token: string };
   private _speed: number = DEFAULT_SPEED;
   private _enableUpdateUsers: boolean = true;
   private _lock: boolean = false;
@@ -116,12 +119,21 @@ export class MonitorLoader {
   }
 
   public set monitorServer(value: any) {
-    if (this._monitorServer !== value) {
-      this._monitorServer = value;
-      this.updateCodePage(undefined, undefined, false);
-      this.updateUsers(true);
-      this.isLockServer(this._monitorServer);
+    if (this._monitorServer === value) return;
+    this._monitorServer = value;
+    // A null or provisional monitor session must never issue requests with
+    // connectionToken undefined. It becomes usable only after a successful
+    // CONNT_MONITOR reconnect response.
+    if (!value?.token) {
+      if (this._timeoutSched) {
+        clearTimeout(this._timeoutSched);
+        this._timeoutSched = undefined;
+      }
+      return;
     }
+    this.updateCodePage(undefined, undefined, false);
+    this.updateUsers(true);
+    this.isLockServer(value);
   }
 
   constructor(context: vscode.ExtensionContext) {
@@ -174,8 +186,11 @@ export class MonitorLoader {
 
     this._panel.onDidDispose((event) => {
       this._isDisposed = true;
+      this._monitorGeneration++;
+      this._monitorConnecting = false;
+      this._monitorTarget = undefined;
 
-      if (this.monitorServer) {
+      if (this.monitorServer?.token) {
         vscode.window.setStatusBarMessage(
           vscode.l10n.t("Disconnecting monitor from server [{0}]", this.monitorServer.name),
           sendDisconnectRequest(this.monitorServer).then(() => {
@@ -188,6 +203,8 @@ export class MonitorLoader {
         clearTimeout(this._timeoutSched);
       }
 
+      this._disposables.forEach(disposable => disposable.dispose());
+      this._disposables = [];
       monitorLoader = undefined;
     });
   }
@@ -214,41 +231,85 @@ export class MonitorLoader {
   }
 
   public toggleServerToMonitor(serverItem: ServerItem) {
-    if (this.monitorServer) {
-      vscode.window.setStatusBarMessage(
-        vscode.l10n.t("Disconnecting [{0}] from the server ", this.monitorServer.name),
-        sendDisconnectRequest(this.monitorServer)
-      );
+    if (this._isDisposed) return;
+
+    const target = serverItem?.id && serverItem?.token
+      ? { id: serverItem.id, environment: serverItem.environment, token: serverItem.token }
+      : undefined;
+    const sameTarget = !!target && !!this._monitorTarget &&
+      target.id === this._monitorTarget.id &&
+      target.environment === this._monitorTarget.environment &&
+      target.token === this._monitorTarget.token;
+
+    // saveSelectServer emits again after its secondary information query. Do
+    // not disconnect/reconnect the monitor on that identical notification.
+    if (sameTarget && (this._monitorConnecting || !!this.monitorServer?.token)) {
+      return;
     }
 
+    const generation = ++this._monitorGeneration;
+    const previous = this.monitorServer;
+    this._monitorTarget = target;
+    this._monitorConnecting = false;
     this.monitorServer = null;
 
-    if (serverItem) {
-      const monitorItem: ServerItem = Utils.deepCopy(
-        ServersConfig.getServerById(serverItem.id)
-      ) as ServerItem;
-
-      monitorItem.id += "_monitor";
-      monitorItem.name += "_monitor";
-
-      vscode.window.setStatusBarMessage(
-        `Conectando monitor ao servidor [${serverItem.name}]`,
-        sendReconnectRequest(
-          monitorItem,
-          serverItem.token,
-          ConnTypeIds.CONNT_MONITOR
-        ).then((result: IReconnectInfo) => {
-          if (result.sucess) {
-            monitorItem.token = result.token;
-            this.monitorServer = monitorItem;
-          } else {
-            vscode.window.showErrorMessage(
-              vscode.l10n.t("It was not possible to make the monitoring connection at [{0}].", this.monitorServer.name)
-            );
-          }
-        })
-      );
+    if (previous?.token) {
+      void sendDisconnectRequest(previous).catch((error) => {
+        languageClient?.outputChannel?.appendLine(
+          "[Monitor] Unable to close previous monitor session: " +
+          (error instanceof Error ? error.message : String(error))
+        );
+      });
     }
+
+    if (!target) {
+      // No authenticated main session: leave the monitor disconnected.
+      // In particular, do not send an empty connection token to the LS.
+      return;
+    }
+
+    const config = ServersConfig.getServerById(target.id);
+    if (!config) return;
+    const monitorItem: ServerItem = Utils.deepCopy(config) as ServerItem;
+    monitorItem.id += "_monitor";
+    monitorItem.name += "_monitor";
+    this._monitorConnecting = true;
+
+    const reconnect = sendReconnectRequest(
+      monitorItem, target.token, ConnTypeIds.CONNT_MONITOR
+    ).then((result: IReconnectInfo) => {
+      if (this._isDisposed || generation !== this._monitorGeneration) return;
+      this._monitorConnecting = false;
+
+      const active = ServersConfig.getCurrentServer();
+      if (!active || active.id !== target.id ||
+          active.environment !== target.environment || active.token !== target.token) {
+        return;
+      }
+      if (!result?.sucess || !result.token) {
+        languageClient?.outputChannel?.appendLine(
+          "[Monitor] Monitor session was not established for " + config.name +
+          "; an authenticated session token was not returned."
+        );
+        return;
+      }
+
+      monitorItem.token = result.token;
+      this.monitorServer = monitorItem;
+    }).catch((error: any) => {
+      if (this._isDisposed || generation !== this._monitorGeneration) return;
+      this._monitorConnecting = false;
+      // Optional monitor failures must not invalidate the main AppServer
+      // session or show a misleading authentication error popup.
+      languageClient?.outputChannel?.appendLine(
+        "[Monitor] Could not establish monitor session: " +
+        (error instanceof Error ? error.message : String(error))
+      );
+    });
+
+    vscode.window.setStatusBarMessage(
+      `Conectando monitor ao servidor [${config.name}]`, reconnect
+    );
   }
 
   private registerCommands() {
@@ -273,10 +334,12 @@ export class MonitorLoader {
             "_totvs-developer-studio.updateMonitorPanel",
             () => {
               if (!this._isDisposed) {
-                if (this.monitorServer === null) {
-                  this.monitorServer = serverProvider.connectedServerItem;
+                if (!this.monitorServer?.token) {
+                  const selected = serverProvider.connectedServerItem;
+                  if (selected?.token) this.toggleServerToMonitor(selected);
+                } else {
+                  this.updateUsers(true);
                 }
-                this.updateUsers(true);
               }
             }
           )
@@ -304,6 +367,7 @@ export class MonitorLoader {
   }
 
   private isLockServer(server: ServerItem) {
+    if (!server?.token) return;
     sendIsLockServer(server).then(
       (response: boolean) => {
         this.lock = response;
@@ -537,6 +601,7 @@ export class MonitorLoader {
   }
 
   private updateCodePage(environment: string, codepage: string, save: boolean) {
+    if (!this.monitorServer?.token) return;
     const envEncodeList: IEnvEncode[] = [];
     const environmentConfig: any[] = ServersConfig.getEnvironmentsConfig(this.monitorServer.name);
 
@@ -583,7 +648,7 @@ export class MonitorLoader {
       clearTimeout(this._timeoutSched);
     }
 
-    if (this.monitorServer === null) {
+    if (!this.monitorServer?.token) {
       return;
     }
 
