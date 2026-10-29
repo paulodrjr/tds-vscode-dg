@@ -33,6 +33,8 @@ jobs:
         run: node test/unit/compileAlertMonitor.cjs
       - name: Test heartbeat and reconnection policy
         run: node test/unit/connectionHeartbeat.cjs
+      - name: Test monitor authenticated-session lifecycle
+        run: node test/unit/monitorSession.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:
