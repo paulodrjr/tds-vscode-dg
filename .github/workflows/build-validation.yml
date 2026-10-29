@@ -46,6 +46,8 @@ jobs:
         run: node test/unit/outgoingTokenGuard.cjs
       - name: Test manual reconnect token rejection fallback
         run: node test/unit/manualReconnect.cjs
+      - name: Test manual reconnect UI routing
+        run: node test/unit/manualReconnectSelection.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:
