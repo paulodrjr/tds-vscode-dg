@@ -5,12 +5,13 @@ Esta versão usa a identidade original `TOTVS.tds-vscode` para substituir a exte
 ## Instalação e recuperação
 
 A partir das correções de conexão, o pacote recebeu versionamento separado
-para distinguir a instalação antiga dos novos VSIX. A correção da
-**reconexão manual quando o token salvo é rejeitado** está na versão
-**2.0.16** (`tds-vscode-2.0.16.vsix`).
+para distinguir a instalação antiga dos novos VSIX. As correções da
+**reconexão manual** e a opção de **ignorar um token salvo rejeitado**
+estão na versão
+**2.0.17** (`tds-vscode-2.0.17.vsix`).
 
 O identificador continua sendo `TOTVS.tds-vscode`, para substituir
-a instalação anterior. Após instalar, confira **2.0.16** em
+a instalação anterior. Após instalar, confira **2.0.17** em
 **Extensões > TOTVS Developer Studio**.
 
 
