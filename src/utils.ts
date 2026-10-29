@@ -492,6 +492,9 @@ export class ServersConfig {
       selected.environments.push(environment);
     }
 
+    if (!token || !token.trim()) {
+      throw new Error("Cannot activate an AppServer session without an authenticated connection token.");
+    }
     selected.username = username;
     selected.environment = environment;
     selected.token = token;
@@ -503,6 +506,7 @@ export class ServersConfig {
     persistServersInfo(servers);
     this._onDidSelectedServer.fire(selected);
 
+    // Only query privileges once an authenticated session token is present.
     void doUpdateInformations(selected).then((information: any) => {
       const latest = getServersConfig();
       if (latest.connectedServer?.id !== id || latest.connectedServer?.token !== token) {
@@ -738,11 +742,21 @@ export class ServersConfig {
     const servers = getServersConfig();
 
     if (servers && servers.connectedServer && servers.connectedServer.id) {
-      // busca sempre pelo ID pois pode ter ocorrido alguma alteração nas configurações do servidor conectado
-      return this.getServerById(servers.connectedServer.id);
-    } else {
-      return "";
+      const active = servers.connectedServer;
+      // The selected session is authoritative for its token. Older tree
+      // records may not have been updated after the authentication response.
+      const configured = servers.configurations.find(
+        (item) => item.id === active.id
+      );
+      if (!configured || !active.token || !String(active.token).trim()) {
+        return "";
+      }
+      if (!configured.environments) configured.environments = [];
+      configured.token = active.token;
+      configured.environment = active.environment;
+      return configured;
     }
+    return "";
   }
 
   static getAuthorizationToken(server: /*ServerItem*/any): string {

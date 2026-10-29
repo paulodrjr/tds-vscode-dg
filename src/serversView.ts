@@ -353,6 +353,14 @@ function doFinishConnectProcess(
   token: string,
   environment: string
 ) {
+  // The token returned by authentication/reconnection replaces the provisional
+  // connection token. Update the live object before notifying the server tree
+  // or Monitor; otherwise one of those consumers may send an empty/stale token.
+  if (!token || !token.trim()) {
+    throw new Error("AppServer did not provide a valid authenticated connection token.");
+  }
+  serverItem.token = token;
+  serverItem.environment = environment;
   ServersConfig.saveConnectionToken(serverItem.id, token, environment);
   ServersConfig.saveSelectServer(
     serverItem.id,

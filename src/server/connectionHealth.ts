@@ -21,6 +21,9 @@ export async function probeAppServerSession(
   if (!languageClient?.isReady) {
     throw new Error("TOTVS Language Server is not ready.");
   }
+  if (!server?.token || !String(server.token).trim()) {
+    throw new Error("AppServer session has no authenticated connection token.");
+  }
 
   const cancellation = new vscode.CancellationTokenSource();
   let timer: NodeJS.Timeout | undefined;
