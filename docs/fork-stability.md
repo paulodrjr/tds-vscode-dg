@@ -4,6 +4,13 @@ Esta versão usa a identidade original `TOTVS.tds-vscode` para substituir a exte
 
 ## Instalação e recuperação
 
+A partir deste conjunto de correções de conexão, o pacote foi versionado
+como **2.0.15** para distingui-lo do VSIX anterior `2.0.14`. O
+identificador da extensão continua sendo `TOTVS.tds-vscode`, para
+substituir a instalação anterior. Após instalar, confira a versão
+`2.0.15` em **Extensões > TOTVS Developer Studio**.
+
+
 No checkout do fork:
 
 ```powershell
