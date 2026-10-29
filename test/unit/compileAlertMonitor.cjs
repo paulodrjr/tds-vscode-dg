@@ -3,7 +3,19 @@ const assert = require("node:assert/strict");
 const Module = require("node:module");
 
 const dialogs = [];
+let showCompileErrors;
 const fakeVscode = {
+  workspace: {
+    getConfiguration: section => {
+      assert.equal(section, "totvsLanguageServer");
+      return {
+        get: (key, defaultValue) => {
+          assert.equal(key, "compilation.showErrorDialog");
+          return showCompileErrors === undefined ? defaultValue : showCompileErrors;
+        }
+      };
+    }
+  },
   window: {
     showErrorMessage: (title, options, ...actions) => {
       dialogs.push({ title, options, actions });
@@ -95,6 +107,31 @@ async function run() {
   await sleep(30);
   assert.equal(dialogs.length, 4, "LSP restart must preserve the fatal warning");
 
+  // The option defaults to enabled, but the user may switch it off at runtime.
+  showCompileErrors = false;
+  alerts.beginCompilationAlerts(107);
+  alerts.setCompilationAlertSources(107, ["C:\\DEV\\SEMALERTA.PRW"]);
+  listener.appendLine("[Error - 6:37:22 PM] [FATAL] Aborting: SEMALERTA.PRW(30)");
+  listener.appendLine("unsupported assign to constant at line 30");
+  await sleep(230);
+  assert.equal(dialogs.length, 4, "disabled setting must suppress compiler log dialogs");
+  assert.ok(alerts.getLoggedCompilationFailure(107),
+    "disabling dialogs must retain captured compiler errors");
+
+  alerts.beginCompilationAlerts(108);
+  alerts.reportCompilationFailure(108, "Falha na compilação", "Erro de compilação");
+  await sleep(230);
+  assert.equal(dialogs.length, 4, "disabled setting must also suppress structured errors");
+
+  // Changing the setting takes effect without restarting the extension.
+  showCompileErrors = true;
+  alerts.beginCompilationAlerts(109);
+  alerts.setCompilationAlertSources(109, ["C:\\DEV\\ATIVADO.PRW"]);
+  listener.appendLine("[Error - 6:37:22 PM] [FATAL] Aborting: ATIVADO.PRW(42)");
+  await sleep(230);
+  assert.equal(dialogs.length, 5, "re-enabled setting must restore modal alerts");
+
+  alerts.resetCompilationAlerts();
   listener.dispose();
   console.log("Compiler OutputChannel modal alert tests passed.");
 }

@@ -67,6 +67,13 @@ function showPendingAlert(session: CompileSession): void {
   session.pending = undefined;
   session.notificationTimer = undefined;
 
+  // Read the setting at display time: users can change it without reloading.
+  // Disabling the dialog must not disable detection or error logging.
+  const showDialog = vscode.workspace
+    .getConfiguration("totvsLanguageServer")
+    .get<boolean>("compilation.showErrorDialog", true);
+  if (showDialog === false) return;
+
   const title = session.generatesPatch
     ? alert.title + " — patch não gerado"
     : alert.title;

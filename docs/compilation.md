@@ -61,6 +61,20 @@ inclui o arquivo afetado e oferece acesso à saída `TOTVS LS` ou à visão
 `Problemas`. Falhas de comunicação durante a compilação também são mostradas
 nessa janela.
 
+A janela pode ser desativada nas configurações do VS Code, em
+**TOTVS: Compilation Show Error Dialog**, ou no `settings.json`:
+
+```json
+{
+  "totvsLanguageServer.compilation.showErrorDialog": false
+}
+```
+
+A configuração é booleana e **ativada por padrão** (`true`). A alteração
+é aplicada imediatamente, sem reiniciar a extensão. Desativar a janela não
+impede a detecção do erro, seu registro no `TOTVS LS`, nem o bloqueio da
+geração de patch quando a compilação falhar.
+
 Avisos do tipo `WARN` não são tratados como erros: continuam sendo apresentados
 na visão `Problemas`, sem interromper o usuário com um erro modal.
 
