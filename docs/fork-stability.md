@@ -25,6 +25,22 @@ Instale o VSIX gerado via **Extensions: Install from VSIX**. O GitHub Actions ta
 
 Uma sessão antiga não deve substituir uma conexão mais recente depois que o usuário trocar de ambiente. Uma reconexão com token inválido pode iniciar uma nova autenticação. A verificação de conexão disponível pelo comando é manual: não há sondagem periódica padrão que possa interromper sessões por falsos positivos.
 
+### Correção: token de conexão não informado
+
+Se o Output do TOTVS LS exibir `Connection token was not informed`
+imediatamente após a autenticação, verifique a versão do fork. A
+rotina de conclusão da conexão agora atualiza o token autenticado no
+objeto de servidor antes de notificar visualizações e consumidores.
+
+O Monitor não consulta código de página, conexões ou estado de bloqueio
+até receber o seu token próprio. Atualizações repetidas das informações
+do servidor não devem reiniciar a sessão do Monitor. Requisições de
+informações, permissões ou monitoramento sem token são barradas
+localmente, sem enviar mensagens inválidas ao Language Server.
+
+Os arquivos de configuração de servidores e o armazenamento dos tokens
+não tiveram sua política de segurança alterada.
+
 ## Monitoramento periódico da conexão
 
 Por padrão, o TDS-VSCode confere a sessão autenticada no AppServer a cada
