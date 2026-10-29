@@ -19,6 +19,7 @@ const fakeVscode = {
 };
 
 const protocol = {
+  ConnTypeIds: { CONNT_MONITOR: 13, CONNT_DEBUGGER: 3 },
   sendReconnectRequest: (item, token, type) => {
     calls.reconnect.push({ item, token, type });
     return new Promise((resolve, reject) => {
