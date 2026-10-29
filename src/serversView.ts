@@ -452,7 +452,8 @@ export type SilentReconnectResult = "restored" | "invalid-token" | "stale";
  */
 export function trySilentReconnectSession(
   expected: ExpectedConnection,
-  timeoutMs = 12000
+  timeoutMs = 12000,
+  mayCommit?: () => boolean
 ): Promise<SilentReconnectResult> {
   const generation = connectionGeneration;
   return queueConnection(async (): Promise<SilentReconnectResult> => {
@@ -478,7 +479,8 @@ export function trySilentReconnectSession(
         })
       ]);
 
-      if (generation !== connectionGeneration || !matchesExpectedConnection(expected)) {
+      if (generation !== connectionGeneration || !matchesExpectedConnection(expected) ||
+          (mayCommit && !mayCommit())) {
         return "stale";
       }
       if (!response?.sucess || !response.token ||

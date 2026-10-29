@@ -25,6 +25,37 @@ Instale o VSIX gerado via **Extensions: Install from VSIX**. O GitHub Actions ta
 
 Uma sessão antiga não deve substituir uma conexão mais recente depois que o usuário trocar de ambiente. Uma reconexão com token inválido pode iniciar uma nova autenticação. A verificação de conexão disponível pelo comando é manual: não há sondagem periódica padrão que possa interromper sessões por falsos positivos.
 
+## Monitoramento periódico da conexão
+
+Por padrão, o TDS-VSCode confere a sessão autenticada no AppServer a cada
+60 segundos por meio de uma consulta de leitura (`serverInformations` ou
+`serverPermissions`). Não é um ping de IP e não gera compilação.
+
+Duas verificações consecutivas sem resposta iniciam até três tentativas
+de reconexão, com esperas de 3, 10 e 30 segundos. Cada requisição tem
+limite local de 12 segundos. O processo não é iniciado durante compilações,
+depurações ou operações manuais de conexão. Tentativas são canceladas se
+o usuário mudar de servidor ou ambiente.
+
+Uma sessão recusada pelo AppServer exige autenticação manual: o monitor
+não abre janelas de usuário e senha. Se a conexão for recuperada, a extensão
+registra o fato na saída `TOTVS LS`; quando as tentativas se esgotam, o
+indicador é atualizado e o usuário recebe um aviso. As consultas bem-sucedidas
+não produzem mensagens repetitivas.
+
+```json
+{
+  "totvsLanguageServer.connection.autoReconnect": true,
+  "totvsLanguageServer.connection.heartbeatInterval": 60,
+  "totvsLanguageServer.connection.maxReconnectAttempts": 3
+}
+```
+
+O monitor pode ser desativado pela primeira configuração; as mudanças
+são aplicadas imediatamente. O fluxo separado de recuperação após
+reinício do processo do Language Server continua existindo.
+
+
 ## Depuração
 
 A extensão valida a pasta de trabalho (CWB), o programa, os argumentos, a sessão do AppServer e a existência do Debug Adapter antes de iniciar.
