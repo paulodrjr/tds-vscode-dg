@@ -51,3 +51,32 @@ export function describeMissingConnectionToken(method: string): string {
     " tentou utilizar uma sessão sem token de conexão. " +
     "Conecte-se novamente ao AppServer ou verifique o ciclo de vida da rotina.";
 }
+
+/**
+ * Keep a short method-only history to diagnose server-side validation errors
+ * even when the outgoing request contained a nonempty token.
+ * No request params, credentials, tokens, or server addresses are stored.
+ */
+const RECENT_METHOD_LIMIT = 12;
+const RECENT_METHOD_AGE_MS = 20000;
+const recentMethods: Array<{ name: string; at: number; hasToken: boolean }> = [];
+
+export function recordTotvsRpc(method: string, valid: boolean): void {
+  if (typeof method !== "string" ||
+      (!method.startsWith("$totvsserver/") && !method.startsWith("$totvsmonitor/"))) {
+    return;
+  }
+  recentMethods.push({ name: method, at: Date.now(), hasToken: valid });
+  if (recentMethods.length > RECENT_METHOD_LIMIT) {
+    recentMethods.splice(0, recentMethods.length - RECENT_METHOD_LIMIT);
+  }
+}
+
+/** Only method names and token-present flags, for the Output diagnostic. */
+export function recentTotvsRpcSummary(): string {
+  const now = Date.now();
+  const active = recentMethods.filter(item => now - item.at <= RECENT_METHOD_AGE_MS);
+  if (!active.length) return "Nenhuma requisição TOTVS recente deste cliente.";
+  return active.map(item => item.name +
+    " (" + (item.hasToken ? "token informado" : "token ausente") + ")").join("; ");
+}
