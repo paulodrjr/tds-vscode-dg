@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { isNewLanguageServerLogEntry, parseCompileLogError } from "./compileLogParser";
+import { recentTotvsRpcSummary } from "../server/connectionTokenGuard";
 
 interface PendingAlert {
   title: string;
@@ -187,7 +188,19 @@ export class CompilerObservedOutputChannel implements vscode.OutputChannel {
     const text = this.partialLine + value;
     const lines = text.split(/\r?\n/);
     this.partialLine = (lines.pop() || "").slice(-4000);
-    for (const line of lines) observeOutputLine(line);
+    for (const line of lines) {
+      observeOutputLine(line);
+      // A server-side "token not informed" message can also come from an
+      // internal Language Server operation, not a rejected extension request.
+      // Correlate method names without exposing sensitive request arguments.
+      if (/Connection token was not informed\.?/i.test(line)) {
+        this.actual.appendLine(
+          "[Connection Diagnostics] Erro de validação do LS. " +
+          "Últimas operações do cliente (sem credenciais): " +
+          recentTotvsRpcSummary()
+        );
+      }
+    }
   }
 
   // Arrow functions preserve their receiver when extension code extracts
