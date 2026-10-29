@@ -254,7 +254,7 @@ export class MonitorLoader {
     this.monitorServer = null;
 
     if (previous?.token) {
-      void sendDisconnectRequest(previous).catch((error) => {
+      void Promise.resolve(sendDisconnectRequest(previous)).catch((error) => {
         languageClient?.outputChannel?.appendLine(
           "[Monitor] Unable to close previous monitor session: " +
           (error instanceof Error ? error.message : String(error))
@@ -275,9 +275,9 @@ export class MonitorLoader {
     monitorItem.name += "_monitor";
     this._monitorConnecting = true;
 
-    const reconnect = sendReconnectRequest(
+    const reconnect = Promise.resolve(sendReconnectRequest(
       monitorItem, target.token, ConnTypeIds.CONNT_MONITOR
-    ).then((result: IReconnectInfo) => {
+    )).then((result: IReconnectInfo) => {
       if (this._isDisposed || generation !== this._monitorGeneration) return;
       this._monitorConnecting = false;
 
