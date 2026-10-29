@@ -42,6 +42,8 @@ jobs:
         run: node test/unit/monitorSession.cjs
       - name: Test tokenless connection RPC guards
         run: node test/unit/connectionTokenGuards.cjs
+      - name: Test central outgoing connection token guard
+        run: node test/unit/outgoingTokenGuard.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:
