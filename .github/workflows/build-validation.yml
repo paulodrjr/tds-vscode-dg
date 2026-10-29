@@ -35,6 +35,8 @@ jobs:
         run: node test/unit/connectionHeartbeat.cjs
       - name: Test monitor authenticated-session lifecycle
         run: node test/unit/monitorSession.cjs
+      - name: Test tokenless connection RPC guards
+        run: node test/unit/connectionTokenGuards.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:
