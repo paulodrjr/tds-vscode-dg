@@ -619,7 +619,8 @@ async function doReconnect(
     if (generation !== connectionGeneration) return false;
 
     if (!response?.sucess || !response.token) {
-      ServersConfig.removeSavedConnectionToken(serverItem.id, environment);
+      // A failed reconnect does not authorize clearing the saved credentials.
+      // Keep the token for diagnosis and require an explicit Connect to log in.
       return false;
     }
 
@@ -634,14 +635,9 @@ async function doReconnect(
       throw error;
     }
 
-    // A manual reconnection must not end in "Unable to select the server"
-    // merely because the saved token was rejected. Retry through the normal
-    // connect/authentication path, which obtains a fresh session token.
-    ServersConfig.removeSavedConnectionToken(serverItem.id, environment);
-    console.warn(
-      "[Connection] Saved AppServer session was rejected by the Language Server. " +
-      "Starting a new connection instead."
-    );
+    // Reconnect must never silently become Connect. Preserve the token so
+    // transient Language Server failures do not erase the saved session.
+    console.warn("[Connection] The Language Server rejected the saved reconnect token:", error);
     return false;
   }
 }
@@ -673,9 +669,14 @@ export function reconnectServer(
           const reconnected = await doReconnect(serverItem, environment, connType, generation);
           if (generation !== connectionGeneration) return;
           if (!reconnected && generation === connectionGeneration) {
-            // An invalid token must not prevent a fresh connection.
+            // The Reconnect command must only attempt to restore a saved session.
+            // A new login is exclusively the responsibility of the Connect command.
             ServersConfig.markConnectionLost();
-            await doConnect(serverItem, environment, connType, generation);
+            vscode.window.showWarningMessage(
+              "Could not restore the saved session for " + serverItem.name +
+              " (" + environment + "). The reconnect token may be missing or invalid. " +
+              "Use Connect to start a new authenticated session."
+            );
           }
         } catch (error) {
           if (generation === connectionGeneration) {
