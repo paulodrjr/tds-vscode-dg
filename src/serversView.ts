@@ -392,6 +392,7 @@ function runCommandUpdateMonitor() {
 
 // Keep connection changes ordered so a delayed disconnect cannot clear a new session.
 let connectionQueue: Promise<void> = Promise.resolve();
+let queuedConnectionOperations = 0;
 let connectionGeneration = 0;
 let pendingAuthentication: { generation: number; serverId: string; environment: string; token: string } | undefined;
 
@@ -413,14 +414,88 @@ export async function cancelAuthentication(serverItem: ServerItem, generation: n
   }
 }
 
-function queueConnection(operation: () => Thenable<void>): Promise<void> {
+function queueConnection<T>(operation: () => Thenable<T>): Promise<T> {
+  queuedConnectionOperations++;
   const next = connectionQueue.then(operation, operation);
-  // Keep the queue usable after a failed request, but preserve the rejection
-  // for the command that initiated it.
-  connectionQueue = next.catch((error: any) => {
+  // Keep the queue usable after a failed request without masking the
+  // rejection for the caller that initiated it.
+  connectionQueue = next.then(() => undefined, (error: any) => {
     console.error("Server connection operation failed:", error);
   });
-  return next;
+  return next.finally(() => { queuedConnectionOperations--; });
+}
+
+export function isConnectionOperationInProgress(): boolean {
+  return queuedConnectionOperations > 0 || pendingAuthentication !== undefined;
+}
+
+/** Immutable session identity used by the heartbeat to reject stale replies. */
+export interface ExpectedConnection {
+  id: string;
+  environment: string;
+  token: string;
+}
+
+function matchesExpectedConnection(expected: ExpectedConnection): boolean {
+  const selected = ServersConfig.getCurrentServer();
+  return !!selected &&
+    selected.id === expected.id &&
+    selected.environment === expected.environment &&
+    selected.token === expected.token;
+}
+
+export type SilentReconnectResult = "restored" | "invalid-token" | "stale";
+
+/**
+ * A bounded, silent reconnection attempt. Never uses doConnect(): that method
+ * can display credential prompts, which must only be shown on user action.
+ */
+export function trySilentReconnectSession(
+  expected: ExpectedConnection,
+  timeoutMs = 12000
+): Promise<SilentReconnectResult> {
+  const generation = connectionGeneration;
+  return queueConnection(async (): Promise<SilentReconnectResult> => {
+    if (generation !== connectionGeneration || !matchesExpectedConnection(expected)) {
+      return "stale";
+    }
+    const serverItem: ServerItem = ServersConfig.getServerById(expected.id);
+    if (!serverItem) return "stale";
+
+    const cancellation = new vscode.CancellationTokenSource();
+    let timeout: NodeJS.Timeout | undefined;
+    try {
+      const reconnect = sendReconnectRequest(
+        serverItem, expected.token, ConnTypeIds.CONNT_DEBUGGER, cancellation.token
+      );
+      const response: IReconnectInfo = await Promise.race([
+        reconnect,
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => {
+            cancellation.cancel();
+            reject(new Error("Automatic reconnection timed out."));
+          }, timeoutMs);
+        })
+      ]);
+
+      if (generation !== connectionGeneration || !matchesExpectedConnection(expected)) {
+        return "stale";
+      }
+      if (!response?.sucess || !response.token ||
+          (response.environment && response.environment !== expected.environment)) {
+        return "invalid-token";
+      }
+
+      serverItem.token = response.token;
+      serverItem.environment = expected.environment;
+      if (response.user) serverItem.username = response.user;
+      doFinishConnectProcess(serverItem, response.token, expected.environment);
+      return "restored";
+    } finally {
+      if (timeout) clearTimeout(timeout);
+      cancellation.dispose();
+    }
+  });
 }
 
 export function connectServer(
@@ -504,13 +579,15 @@ export function authenticate(
 function doReconnect(
   serverItem: ServerItem,
   environment: string,
-  connType: ConnTypeIds
+  connType: ConnTypeIds,
+  generation: number
 ): Thenable<boolean> {
   const token = ServersConfig.getSavedTokens(serverItem.id, environment);
 
   if (token) {
     return sendReconnectRequest(serverItem, token, connType).then(
       (ri: IReconnectInfo) => {
+        if (generation !== connectionGeneration) return false;
         if (ri.sucess) {
           doFinishConnectProcess(serverItem, ri.token, environment);
         }
@@ -546,7 +623,8 @@ export function reconnectServer(
       async (progress) => {
         progress.report({ increment: 0 });
         try {
-          const reconnected = await doReconnect(serverItem, environment, connType);
+          const reconnected = await doReconnect(serverItem, environment, connType, generation);
+          if (generation !== connectionGeneration) return;
           if (!reconnected && generation === connectionGeneration) {
             // An invalid token must not prevent a fresh connection.
             ServersConfig.markConnectionLost();
