@@ -144,6 +144,9 @@ async function run() {
     line.includes("[Connection Diagnostics]") &&
     line.includes("$totvsserver/serverInformations")));
   assert.ok(!forwardedLines.join(" ").includes("MY_SECRET"));
+  assert.ok(forwardedLines.findIndex(line => line.includes("Connection token was not informed"))
+    < forwardedLines.findIndex(line => line.includes("[Connection Diagnostics]")),
+    "the original Language Server error must be written before its diagnostic");
 
   listener.dispose();
   console.log("Compiler OutputChannel modal alert tests passed.");

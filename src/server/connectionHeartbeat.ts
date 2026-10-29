@@ -181,6 +181,17 @@ export class ConnectionHeartbeatMonitor implements vscode.Disposable {
 
   private async recover(session: HeartbeatSession, epoch: number): Promise<void> {
     const settings = this.settings();
+    // The heartbeat can continue probing, but cannot silently restore a
+    // session after the user disables saved-token reuse. Never send a known
+    // problematic reconnect request merely to satisfy a retry counter.
+    if (vscode.workspace.getConfiguration("totvsLanguageServer")
+        .get<boolean>("connection.useSavedToken", true) === false) {
+      if (this.isCurrent(session, epoch)) {
+        this.notifyDisconnected(session,
+          "A reutilização do token salvo está desativada. Faça uma conexão manual.");
+      }
+      return;
+    }
     this.log("A sessão de " + session.name + " / " + session.environment +
       " não respondeu a duas verificações. Iniciando recuperação silenciosa.");
 

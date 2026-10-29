@@ -206,19 +206,22 @@ export class CompilerObservedOutputChannel implements vscode.OutputChannel {
   // Arrow functions preserve their receiver when extension code extracts
   // outputChannel.appendLine into an unbound local variable.
   append = (value: string): void => {
-    this.observe(value);
+    // Display the original LS line before its explanation. The previous
+    // ordering made [Connection Diagnostics] appear above the error it
+    // described and looked like an unrelated preceding request.
     this.actual.append(value);
+    this.observe(value);
   };
 
   appendLine = (value: string): void => {
-    this.observe(value + "\n");
     this.actual.appendLine(value);
+    this.observe(value + "\n");
   };
 
   replace = (value: string): void => {
     this.partialLine = "";
-    this.observe(value + "\n");
     this.actual.replace(value);
+    this.observe(value + "\n");
   };
 
   clear = (): void => {

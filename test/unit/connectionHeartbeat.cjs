@@ -47,7 +47,8 @@ function fire(name, event) {
 const settings = {
   "connection.autoReconnect": true,
   "connection.heartbeatInterval": 60,
-  "connection.maxReconnectAttempts": 3
+  "connection.maxReconnectAttempts": 3,
+  "connection.useSavedToken": true
 };
 const warnings = [];
 const log = [];
@@ -155,6 +156,7 @@ function reset() {
   settings["connection.autoReconnect"] = true;
   settings["connection.heartbeatInterval"] = 60;
   settings["connection.maxReconnectAttempts"] = 3;
+  settings["connection.useSavedToken"] = true;
   probeImpl = async () => {};
   reconnectImpl = async () => "restored";
 }
@@ -227,6 +229,17 @@ async function main() {
   assert.equal(reconnectCount, 1, "invalid token should stop further attempts");
   assert.equal(warnings.length, 1, "request manual login once");
   assert.equal(cancellations, 1);
+
+  reset();
+  settings["connection.useSavedToken"] = false;
+  probeImpl = async () => { throw new Error("unreachable"); };
+  monitor = new ConnectionHeartbeatMonitor();
+  await advance(120000);
+  assert.equal(probeCount, 2, "heartbeat should still check session reachability");
+  assert.equal(reconnectCount, 0,
+    "disabled saved-token reuse must not call silent reconnect");
+  assert.equal(warnings.length, 1,
+    "after two failures request manual authentication once");
 
   reset();
   settings["connection.autoReconnect"] = false;

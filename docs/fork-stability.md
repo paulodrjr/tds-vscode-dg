@@ -59,6 +59,35 @@ rejeita localmente qualquer RPC TOTVS com token vazio, informando o método
 e a origem da chamada. Essas informações permitem identificar a rotina
 responsável sem expor credenciais.
 
+### AppServer rejeita o token salvo na reconexão
+
+Se o Output mostrar uma operação `$totvsserver/reconnect (token informado)`
+seguida da mensagem `Connection token was not informed`, o cliente confirmou
+que **enviou um campo preenchido**, mas o Language Server recusou a operação.
+Isso não demonstra, por si só, se o token expirou, foi invalidado ou se houve
+uma falha interna no LS.
+
+Para não provocar a mesma rejeição repetidas vezes, desative **apenas no
+workspace do servidor afetado** a configuração abaixo:
+
+```json
+{
+  "totvsLanguageServer.connection.useSavedToken": false
+}
+```
+
+Com `false`, a opção **Reconectar** executa uma nova conexão e solicita
+autenticação quando o AppServer exigir, sem enviar `$totvsserver/reconnect`.
+O monitoramento periódico continua verificando a sessão, mas se detectar uma
+desconexão não tentará reutilizar o token desabilitado; avisará o usuário
+para reconectar manualmente. A tentativa automática de restaurar a última
+sessão na inicialização também é ignorada, evitando janelas inesperadas.
+
+O padrão permanece `true` para preservar a reconexão rápida dos demais
+servidores. Essa opção não altera o conteúdo ou o armazenamento dos tokens.
+Para depuração, as linhas `[Connection Diagnostics]` agora são exibidas
+**depois** do erro a que se referem.
+
 ## Monitoramento periódico da conexão
 
 Por padrão, o TDS-VSCode confere a sessão autenticada no AppServer a cada

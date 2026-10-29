@@ -464,6 +464,10 @@ export function trySilentReconnectSession(
   timeoutMs = 12000,
   mayCommit?: () => boolean
 ): Promise<SilentReconnectResult> {
+  if (vscode.workspace.getConfiguration("totvsLanguageServer")
+      .get<boolean>("connection.useSavedToken", true) === false) {
+    return Promise.resolve("invalid-token");
+  }
   const generation = connectionGeneration;
   return queueConnection(async (): Promise<SilentReconnectResult> => {
     if (generation !== connectionGeneration || !matchesExpectedConnection(expected)) {
@@ -593,6 +597,14 @@ async function doReconnect(
   connType: ConnTypeIds,
   generation: number
 ): Promise<boolean> {
+  const reuseSavedToken = vscode.workspace.getConfiguration("totvsLanguageServer")
+    .get<boolean>("connection.useSavedToken", true) !== false;
+  if (!reuseSavedToken) {
+    // Some AppServers / Language Server sessions reject saved reconnect tokens
+    // even though they are not empty. Avoid sending the doomed RPC at all.
+    // The caller will proceed through Connect + Authentication.
+    return false;
+  }
   const token = ServersConfig.getSavedTokens(serverItem.id, environment);
 
   if (typeof token !== "string" || !token.trim()) {
@@ -679,6 +691,12 @@ export function reconnectServer(
 }
 
 export function reconnectLastServer(): Promise<void> {
+  // Automatic startup recovery must not unexpectedly open credentials if the
+  // user deliberately disabled reuse of saved session tokens.
+  if (vscode.workspace.getConfiguration("totvsLanguageServer")
+      .get<boolean>("connection.useSavedToken", true) === false) {
+    return Promise.resolve();
+  }
   const lastConnectedServer = ServersConfig.lastConnectedServer();
   if (!lastConnectedServer) return Promise.resolve();
   return reconnectServer(

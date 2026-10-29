@@ -8,6 +8,7 @@ const history = {
   removed: 0, saved: [], errors: [], warnings: []
 };
 let server, selected, savedToken, reconnectResponse;
+let reuseSavedToken = true;
 
 function reset() {
   server = {
@@ -17,6 +18,7 @@ function reset() {
   };
   selected = server;
   savedToken = "STALE_TOKEN";
+  reuseSavedToken = true;
   reconnectResponse = () => Promise.reject(new Error(
     "One or more validations errors detected:\n- Connection token was not informed."
   ));
@@ -45,6 +47,15 @@ const mockConfig = {
   }
 };
 const vscode = {
+  workspace: {
+    getConfiguration: section => {
+      assert.equal(section, "totvsLanguageServer");
+      return {
+        get: (key, fallback) => key === "connection.useSavedToken"
+          ? reuseSavedToken : fallback
+      };
+    }
+  },
   l10n: { t: (value) => value },
   env: { language: "pt-br" },
   window: {
@@ -149,6 +160,23 @@ async function main() {
   assert.equal(history.reconnect, 0,
     "never attempt reconnect RPC with no saved token");
   assert.equal(history.connect, 1);
+
+  reset();
+  reuseSavedToken = false;
+  await methods.reconnectServer(
+    server, "CZA3BD_COMPILA", protocol.ConnTypeIds.CONNT_DEBUGGER
+  );
+  assert.equal(history.reconnect, 0,
+    "disabled token reuse must not call the LS reconnect endpoint");
+  assert.equal(history.connect, 1,
+    "disabled token reuse must start a fresh connection");
+  assert.equal(history.prompts.length, 1,
+    "fresh connection may require user authentication");
+  assert.equal(history.removed, 0,
+    "bypassing reuse must not destroy the existing saved token");
+  await methods.reconnectLastServer();
+  assert.equal(history.connect, 1,
+    "disabled token reuse must not pop up a startup login dialog");
 
   reset();
   reconnectResponse = () => Promise.reject(new Error(

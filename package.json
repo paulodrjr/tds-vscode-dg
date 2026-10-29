@@ -751,6 +751,11 @@
           "minimum": 1,
           "maximum": 3,
           "description": "Número máximo de tentativas silenciosas de reconexão por falha de sessão (de 1 a 3). Um token rejeitado exige reconexão manual."
+        },
+        "totvsLanguageServer.connection.useSavedToken": {
+          "type": "boolean",
+          "default": true,
+          "description": "Permite reutilizar o token salvo em Reconectar e na reconexão automática. Desative no workspace de um AppServer que rejeita tokens salvos: a reconexão manual fará uma nova conexão/autenticação e a recuperação silenciosa ficará desativada até reabilitar a opção."
         }
       }
     },
