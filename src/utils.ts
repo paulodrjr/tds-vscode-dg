@@ -449,22 +449,14 @@ export class ServersConfig {
 
   static getSavedTokens(id: string, environment: string): undefined | string {
     const servers = getServersConfig();
-    let token = undefined;
-
-    if (servers.savedTokens) {
-      token = servers.savedTokens
-        .filter((element) => {
-          return element[0] === id + ":" + environment;
-        })
-        .map((element) => {
-          return element[1]["token"];
-        });
-      if (token) {
-        token = token[0];
-      }
-    }
-
-    return token;
+    const key = id + ":" + environment;
+    const saved = Array.isArray(servers.savedTokens)
+      ? servers.savedTokens.find((entry) => Array.isArray(entry) && entry[0] === key)
+      : undefined;
+    const token = saved?.[1]?.token;
+    // Legacy and damaged session entries may contain empty or non-string
+    // values. These cannot be reused by the Language Server.
+    return typeof token === "string" && token.trim() ? token : undefined;
   }
 
   /**

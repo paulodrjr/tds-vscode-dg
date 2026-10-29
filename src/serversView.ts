@@ -21,6 +21,7 @@ import {
 } from "./protocolMessages";
 import { EnvSection, ServerItem } from "./serverItem";
 import { processSelectResourceMessage } from "./utilities/processSelectResource";
+import { isRejectedReconnectToken } from "./server/reconnectError";
 
 const compile = require("template-literal");
 
@@ -586,26 +587,50 @@ export function authenticate(
   });
 }
 
-function doReconnect(
+async function doReconnect(
   serverItem: ServerItem,
   environment: string,
   connType: ConnTypeIds,
   generation: number
-): Thenable<boolean> {
+): Promise<boolean> {
   const token = ServersConfig.getSavedTokens(serverItem.id, environment);
 
-  if (token) {
-    return sendReconnectRequest(serverItem, token, connType).then(
-      (ri: IReconnectInfo) => {
-        if (generation !== connectionGeneration) return false;
-        if (ri.sucess) {
-          doFinishConnectProcess(serverItem, ri.token, environment);
-        }
-        return ri.sucess;
-      }
+  if (typeof token !== "string" || !token.trim()) {
+    // No reusable session: the caller must establish a new connection.
+    return false;
+  }
+
+  try {
+    const response: IReconnectInfo = await sendReconnectRequest(
+      serverItem, token, connType
     );
-  } else {
-    return Promise.resolve(false);
+    if (generation !== connectionGeneration) return false;
+
+    if (!response?.sucess || !response.token) {
+      ServersConfig.removeSavedConnectionToken(serverItem.id, environment);
+      return false;
+    }
+
+    serverItem.username = response.user || serverItem.username;
+    doFinishConnectProcess(serverItem, response.token, environment);
+    return true;
+  } catch (error) {
+    if (generation !== connectionGeneration) return false;
+    if (!isRejectedReconnectToken(error)) {
+      // A network failure or another unexpected server error cannot be
+      // interpreted as an invalid token; preserve the real failure.
+      throw error;
+    }
+
+    // A manual reconnection must not end in "Unable to select the server"
+    // merely because the saved token was rejected. Retry through the normal
+    // connect/authentication path, which obtains a fresh session token.
+    ServersConfig.removeSavedConnectionToken(serverItem.id, environment);
+    console.warn(
+      "[Connection] Saved AppServer session was rejected by the Language Server. " +
+      "Starting a new connection instead."
+    );
+    return false;
   }
 }
 
