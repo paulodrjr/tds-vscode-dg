@@ -41,6 +41,14 @@ localmente, sem enviar mensagens inválidas ao Language Server.
 Os arquivos de configuração de servidores e o armazenamento dos tokens
 não tiveram sua política de segurança alterada.
 
+Se a mensagem `Connection token was not informed` voltar a aparecer no
+canal **TOTVS LS**, a extensão agora acrescenta uma linha
+`[Connection Diagnostics]` com os nomes das requisições recentes (sem
+valores de tokens, senhas ou parâmetros). O cliente também registra e
+rejeita localmente qualquer RPC TOTVS com token vazio, informando o método
+e a origem da chamada. Essas informações permitem identificar a rotina
+responsável sem expor credenciais.
+
 ## Monitoramento periódico da conexão
 
 Por padrão, o TDS-VSCode confere a sessão autenticada no AppServer a cada

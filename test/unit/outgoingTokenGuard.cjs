@@ -81,6 +81,13 @@ async function main() {
   await client.sendRequest("textDocument/hover", { textDocument: { uri: "file:///x" } });
   assert.equal(outbound.length, 6);
 
+  const diagnostics = require("../../out/server/connectionTokenGuard.js");
+  const summary = diagnostics.recentTotvsRpcSummary();
+  assert.match(summary, /\$totvsserver\/serverInformations/);
+  assert.match(summary, /\$totvsmonitor\/getUsers/);
+  assert.ok(!summary.includes("MY_SECRET"),
+    "recent request diagnostics must not reveal token values");
+
   console.log("Central outgoing connection-token guards passed.");
 }
 
