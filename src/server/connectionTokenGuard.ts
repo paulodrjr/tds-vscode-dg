@@ -29,7 +29,8 @@ export function checkConnectionToken(method: string, params: any): TokenCheck {
   if (token === undefined && params && typeof params === "object") {
     // Protocol conventions: compilationInfo, serverInformationsInfo,
     // reconnectInfo, getUsersInfo, ... each carry connectionToken.
-    for (const payload of Object.values(params)) {
+    for (const key of Object.keys(params)) {
+      const payload = params[key];
       if (payload !== null && typeof payload === "object" &&
           Object.prototype.hasOwnProperty.call(payload, "connectionToken")) {
         token = (payload as any).connectionToken;
