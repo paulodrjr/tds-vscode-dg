@@ -37,10 +37,8 @@ try {
   Module._load = originalLoad;
 }
 
-const forwardedLines = [];
 const output = {
-  name: "TOTVS LS", append: () => {},
-  appendLine: line => forwardedLines.push(line),
+  name: "TOTVS LS", append: () => {}, appendLine: () => {},
   replace: () => {}, clear: () => {}, show: () => {},
   hide: () => {}, dispose: () => {}
 };
@@ -134,20 +132,6 @@ async function run() {
   assert.equal(dialogs.length, 5, "re-enabled setting must restore modal alerts");
 
   alerts.resetCompilationAlerts();
-  // If the LS still emits a token-validation message internally, preserve
-  // method-only correlation to isolate its origin on the next occurrence.
-  const tokenDiag = require("../../out/server/connectionTokenGuard.js");
-  tokenDiag.recordTotvsRpc("$totvsserver/serverInformations", true);
-  listener.appendLine("[Error - 12:31:58 PM] One or more validations errors detected:");
-  listener.appendLine("- Connection token was not informed.");
-  assert.ok(forwardedLines.some(line =>
-    line.includes("[Connection Diagnostics]") &&
-    line.includes("$totvsserver/serverInformations")));
-  assert.ok(!forwardedLines.join(" ").includes("MY_SECRET"));
-  assert.ok(forwardedLines.findIndex(line => line.includes("Connection token was not informed"))
-    < forwardedLines.findIndex(line => line.includes("[Connection Diagnostics]")),
-    "the original Language Server error must be written before its diagnostic");
-
   listener.dispose();
   console.log("Compiler OutputChannel modal alert tests passed.");
 }

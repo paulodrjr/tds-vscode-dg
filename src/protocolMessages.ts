@@ -95,18 +95,9 @@ export interface IMntAuthInfo {
   error: string;
 }
 
-/** Reject malformed session requests locally rather than asking the LS to
- * process an empty connection token and emit an unrelated validation error. */
-function hasAuthenticatedToken(token?: string): boolean {
-  return typeof token === "string" && token.trim().length > 0;
-}
-
 export function sendDisconnectRequest(
   connectedServerItem: ServerItem
 ): Thenable<ITokenInfo> {
-  if (!hasAuthenticatedToken(connectedServerItem?.token)) {
-    return Promise.resolve({ sucess: false, token: "", needAuthentication: false });
-  }
   return languageClient
     .sendRequest("$totvsserver/disconnect", {
       disconnectInfo: {
@@ -216,12 +207,8 @@ export function sendAuthenticateRequest(
 export function sendReconnectRequest(
   serverItem: ServerItem,
   connectionToken: string,
-  _connType: ConnTypeIds,
-  cancellationToken?: vscode.CancellationToken
+  _connType: ConnTypeIds
 ): Thenable<IReconnectInfo> {
-  if (!hasAuthenticatedToken(connectionToken)) {
-    return Promise.resolve({ sucess: false, token: "", environment: "", user: "" });
-  }
   return languageClient
     .sendRequest("$totvsserver/reconnect", {
       reconnectInfo: {
@@ -229,7 +216,7 @@ export function sendReconnectRequest(
         serverName: serverItem.name,
         connType: _connType,
       },
-    }, cancellationToken)
+    })
     .then(
       (reconnectNode: ReconnectNode) => {
         let token: string = reconnectNode.connectionToken;
@@ -303,7 +290,6 @@ export function mntAuthenticateRequest(serverItem: ServerItem): Thenable<any> {
 }
 
 export function sendGetUsersRequest(server: ServerItem): Thenable<any> {
-  if (!hasAuthenticatedToken(server?.token)) return Promise.resolve([]);
   return languageClient
     .sendRequest("$totvsmonitor/getUsers", {
       getUsersInfo: {
@@ -337,9 +323,6 @@ export function sendLockServer(
 }
 
 export function sendIsLockServer(server: ServerItem): Thenable<boolean> {
-  if (!hasAuthenticatedToken(server?.token)) {
-    return Promise.reject(new Error("Monitor has no authenticated connection token."));
-  }
   return languageClient
     .sendRequest("$totvsmonitor/getConnectionStatus", {
       getConnectionStatusInfo: {
@@ -630,18 +613,14 @@ export interface IGetServerPermissionsResult {
  * @see Para servidores P20 (Harpia) ou superiores, prefira {@link sendGetServerInformationsInfo}
  */
 export function sendGetServerPermissionsInfo(
-  server: ServerItem,
-  cancellationToken?: vscode.CancellationToken
+  server: ServerItem
 ): Promise<IGetServerPermissionsResult> {
-  if (!hasAuthenticatedToken(server?.token)) {
-    return Promise.reject(new Error("Server permissions query rejected locally: missing authenticated session token."));
-  }
   return languageClient
     .sendRequest("$totvsserver/serverPermissions", {
       serverPermissionsInfo: {
         connectionToken: server.token,
       },
-    }, cancellationToken)
+    })
     .then((response: IGetServerPermissionsResult) => {
       return response;
     });
@@ -667,18 +646,14 @@ export interface IGetServerInformationsResult {
  * @returns Informações de privilégios e como o server vê o ambiente (Prothes ou Logix)
  */
 export function sendGetServerInformationsInfo(
-  server: ServerItem,
-  cancellationToken?: vscode.CancellationToken
+  server: ServerItem
 ): Promise<IGetServerInformationsResult> {
-  if (!hasAuthenticatedToken(server?.token)) {
-    return Promise.reject(new Error("Server information query rejected locally: missing authenticated session token."));
-  }
   return languageClient
     .sendRequest("$totvsserver/serverInformations", {
       serverInformationsInfo: {
         connectionToken: server.token,
       },
-    }, cancellationToken)
+    })
     .then((response: IGetServerInformationsResult) => {
       return response;
     });

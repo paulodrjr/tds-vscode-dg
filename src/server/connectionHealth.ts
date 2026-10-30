@@ -1,58 +1,12 @@
 import * as vscode from "vscode";
 import { languageClient } from "../extension";
 import Utils, { ServersConfig } from "../utils";
-import { ServerItem } from "../serverItem";
 import {
   sendGetServerInformationsInfo,
   sendGetServerPermissionsInfo
 } from "../protocolMessages";
 
-export const CONNECTION_PROBE_TIMEOUT_MS = 12000;
-
-/**
- * Verify the authenticated AppServer session, not merely TCP reachability.
- * The request only reads server information/permissions; it does not change
- * the RPO, connect a new user or perform a compiler operation.
- */
-export async function probeAppServerSession(
-  server: ServerItem,
-  timeoutMs = CONNECTION_PROBE_TIMEOUT_MS
-): Promise<void> {
-  if (!languageClient?.isReady) {
-    throw new Error("TOTVS Language Server is not ready.");
-  }
-  if (!server?.token || !String(server.token).trim()) {
-    throw new Error("AppServer session has no authenticated connection token.");
-  }
-
-  const cancellation = new vscode.CancellationTokenSource();
-  let timer: NodeJS.Timeout | undefined;
-  try {
-    const request = Utils.isServerP20OrGreater(server)
-      ? sendGetServerInformationsInfo(server, cancellation.token)
-      : sendGetServerPermissionsInfo(server, cancellation.token);
-
-    const result = await Promise.race([
-      request,
-      new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => {
-          cancellation.cancel();
-          reject(new Error("AppServer did not answer the session check within " +
-            Math.ceil(timeoutMs / 1000) + " seconds."));
-        }, timeoutMs);
-      }),
-    ]);
-
-    if (!result || result.message !== "OK") {
-      throw new Error(result?.message || "AppServer returned an invalid session response.");
-    }
-  } finally {
-    if (timer) clearTimeout(timer);
-    cancellation.dispose();
-  }
-}
-
-/** Manual, user-requested check; automatic monitoring is implemented separately. */
+/** Performs a read-only remote session check when explicitly requested. */
 export async function checkRemoteConnection(): Promise<void> {
   const server = ServersConfig.getCurrentServer();
   if (!server) {
@@ -60,6 +14,8 @@ export async function checkRemoteConnection(): Promise<void> {
     return;
   }
 
+  const message = "Unable to validate the AppServer session for " +
+    server.name + " / " + server.environment + ". ";
   if (!languageClient?.isReady) {
     ServersConfig.markConnectionLost(server.token);
     vscode.window.showWarningMessage(
@@ -68,8 +24,19 @@ export async function checkRemoteConnection(): Promise<void> {
     return;
   }
 
+  let timeout: NodeJS.Timeout | undefined;
   try {
-    await probeAppServerSession(server);
+    const response = await Promise.race([
+      Utils.isServerP20OrGreater(server)
+        ? sendGetServerInformationsInfo(server)
+        : sendGetServerPermissionsInfo(server),
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error("Remote request timed out after 12 seconds.")), 12000);
+      })
+    ]);
+    if (response?.message !== "OK") {
+      throw new Error(response?.message || "Remote server returned an unexpected response.");
+    }
     vscode.window.showInformationMessage(
       "AppServer connection verified: " + server.name + " / " + server.environment
     );
@@ -77,13 +44,13 @@ export async function checkRemoteConnection(): Promise<void> {
     const detail = error instanceof Error ? error.message : String(error);
     const action = "Mark disconnected";
     const answer = await vscode.window.showWarningMessage(
-      "Unable to validate the AppServer session for " +
-      server.name + " / " + server.environment + ". " + detail +
-      " The UI may be stale. Mark this session disconnected?",
+      message + detail + " The UI may be stale. Mark this session disconnected?",
       action
     );
     if (answer === action) {
       ServersConfig.markConnectionLost(server.token);
     }
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }

@@ -10,11 +10,6 @@ on:
 permissions:
   contents: read
 
-# Avoid packaging obsolete commits when many fixes are pushed together.
-concurrency:
-  group: tds-validation-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: windows-latest
@@ -36,18 +31,6 @@ jobs:
         run: node test/unit/compileLogParser.cjs
       - name: Test OutputChannel modal alerts
         run: node test/unit/compileAlertMonitor.cjs
-      - name: Test heartbeat and reconnection policy
-        run: node test/unit/connectionHeartbeat.cjs
-      - name: Test monitor authenticated-session lifecycle
-        run: node test/unit/monitorSession.cjs
-      - name: Test tokenless connection RPC guards
-        run: node test/unit/connectionTokenGuards.cjs
-      - name: Test central outgoing connection token guard
-        run: node test/unit/outgoingTokenGuard.cjs
-      - name: Test manual reconnect token rejection fallback
-        run: node test/unit/manualReconnect.cjs
-      - name: Test manual reconnect UI routing
-        run: node test/unit/manualReconnectSelection.cjs
       - name: Publish installable VSIX
         uses: actions/upload-artifact@v4
         with:

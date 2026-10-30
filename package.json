@@ -2,7 +2,7 @@
   "name": "tds-vscode",
   "displayName": "TOTVS Developer Studio for VSCode (AdvPL, TLPP e 4GL)",
   "description": "%tds.package.description%",
-  "version": "2.0.17",
+  "version": "2.0.14",
   "publisher": "TOTVS",
   "preview": true,
   "author": {
@@ -732,30 +732,6 @@
           "type": "boolean",
           "default": true,
           "description": "Exibe uma janela de erro modal quando uma compilação falhar (ERROR/FATAL ou falha reportada pelo Language Server). Ao desativar, os diagnósticos continuam disponíveis na saída TOTVS LS e na visão Problemas."
-        },
-        "totvsLanguageServer.connection.autoReconnect": {
-          "type": "boolean",
-          "default": true,
-          "description": "Monitora periodicamente a sessão do AppServer e tenta reconectar automaticamente quando duas verificações consecutivas falharem. Desative para impedir verificações e reconexões automáticas."
-        },
-        "totvsLanguageServer.connection.heartbeatInterval": {
-          "type": "number",
-          "default": 60,
-          "minimum": 30,
-          "maximum": 3600,
-          "description": "Intervalo em segundos entre verificações da sessão autenticada no AppServer (padrão: 60 segundos)."
-        },
-        "totvsLanguageServer.connection.maxReconnectAttempts": {
-          "type": "integer",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 3,
-          "description": "Número máximo de tentativas silenciosas de reconexão por falha de sessão (de 1 a 3). Um token rejeitado exige reconexão manual."
-        },
-        "totvsLanguageServer.connection.useSavedToken": {
-          "type": "boolean",
-          "default": true,
-          "description": "Permite reutilizar o token salvo em Reconectar e na reconexão automática. Desative no workspace de um AppServer que rejeita tokens salvos: a reconexão manual fará uma nova conexão/autenticação e a recuperação silenciosa ficará desativada até reabilitar a opção."
         }
       }
     },

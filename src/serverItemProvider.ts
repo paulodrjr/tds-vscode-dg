@@ -191,12 +191,7 @@ class ServerItemProvider
 
     ServersConfig.getServers().forEach((element) => {
       let environmentsServer = new Array<EnvSection>();
-      // Do not overwrite the selected environment token with the token from
-      // the last environment in the list (which may have no saved session).
-      const selectedToken = element.environment
-        ? ServersConfig.getSavedTokens(element.id, element.environment)
-        : undefined;
-      let token: string = element.token || selectedToken || "";
+      let token: string = element.token ? element.token : "";
 
       if (element.environments) {
         element.environments.forEach((environment) => {
@@ -213,6 +208,8 @@ class ServerItemProvider
           //     }
           //   });
           // }
+          token = ServersConfig.getSavedTokens(element.id, element.environment);
+
           environmentsServer.push(env);
         });
       }

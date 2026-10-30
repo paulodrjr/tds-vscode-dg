@@ -21,7 +21,6 @@ import {
 } from "./protocolMessages";
 import { EnvSection, ServerItem } from "./serverItem";
 import { processSelectResourceMessage } from "./utilities/processSelectResource";
-import { isRejectedReconnectToken } from "./server/reconnectError";
 
 const compile = require("template-literal");
 
@@ -354,14 +353,6 @@ function doFinishConnectProcess(
   token: string,
   environment: string
 ) {
-  // The token returned by authentication/reconnection replaces the provisional
-  // connection token. Update the live object before notifying the server tree
-  // or Monitor; otherwise one of those consumers may send an empty/stale token.
-  if (!token || !token.trim()) {
-    throw new Error("AppServer did not provide a valid authenticated connection token.");
-  }
-  serverItem.token = token;
-  serverItem.environment = environment;
   ServersConfig.saveConnectionToken(serverItem.id, token, environment);
   ServersConfig.saveSelectServer(
     serverItem.id,
@@ -401,7 +392,6 @@ function runCommandUpdateMonitor() {
 
 // Keep connection changes ordered so a delayed disconnect cannot clear a new session.
 let connectionQueue: Promise<void> = Promise.resolve();
-let queuedConnectionOperations = 0;
 let connectionGeneration = 0;
 let pendingAuthentication: { generation: number; serverId: string; environment: string; token: string } | undefined;
 
@@ -423,94 +413,14 @@ export async function cancelAuthentication(serverItem: ServerItem, generation: n
   }
 }
 
-function queueConnection<T>(operation: () => Thenable<T>): Promise<T> {
-  queuedConnectionOperations++;
+function queueConnection(operation: () => Thenable<void>): Promise<void> {
   const next = connectionQueue.then(operation, operation);
-  // Keep the queue usable after a failed request without masking the
-  // rejection for the caller that initiated it.
-  connectionQueue = next.then(() => undefined, (error: any) => {
+  // Keep the queue usable after a failed request, but preserve the rejection
+  // for the command that initiated it.
+  connectionQueue = next.catch((error: any) => {
     console.error("Server connection operation failed:", error);
   });
-  return next.finally(() => { queuedConnectionOperations--; });
-}
-
-export function isConnectionOperationInProgress(): boolean {
-  return queuedConnectionOperations > 0 || pendingAuthentication !== undefined;
-}
-
-/** Immutable session identity used by the heartbeat to reject stale replies. */
-export interface ExpectedConnection {
-  id: string;
-  environment: string;
-  token: string;
-}
-
-function matchesExpectedConnection(expected: ExpectedConnection): boolean {
-  const selected = ServersConfig.getCurrentServer();
-  return !!selected &&
-    selected.id === expected.id &&
-    selected.environment === expected.environment &&
-    selected.token === expected.token;
-}
-
-export type SilentReconnectResult = "restored" | "invalid-token" | "stale";
-
-/**
- * A bounded, silent reconnection attempt. Never uses doConnect(): that method
- * can display credential prompts, which must only be shown on user action.
- */
-export function trySilentReconnectSession(
-  expected: ExpectedConnection,
-  timeoutMs = 12000,
-  mayCommit?: () => boolean
-): Promise<SilentReconnectResult> {
-  if (vscode.workspace.getConfiguration("totvsLanguageServer")
-      .get<boolean>("connection.useSavedToken", true) === false) {
-    return Promise.resolve("invalid-token");
-  }
-  const generation = connectionGeneration;
-  return queueConnection(async (): Promise<SilentReconnectResult> => {
-    if (generation !== connectionGeneration || !matchesExpectedConnection(expected)) {
-      return "stale";
-    }
-    const serverItem: ServerItem = ServersConfig.getServerById(expected.id);
-    if (!serverItem) return "stale";
-
-    const cancellation = new vscode.CancellationTokenSource();
-    let timeout: NodeJS.Timeout | undefined;
-    try {
-      const reconnect = sendReconnectRequest(
-        serverItem, expected.token, ConnTypeIds.CONNT_DEBUGGER, cancellation.token
-      );
-      const response: IReconnectInfo = await Promise.race([
-        reconnect,
-        new Promise<never>((_, reject) => {
-          timeout = setTimeout(() => {
-            cancellation.cancel();
-            reject(new Error("Automatic reconnection timed out."));
-          }, timeoutMs);
-        })
-      ]);
-
-      if (generation !== connectionGeneration || !matchesExpectedConnection(expected) ||
-          (mayCommit && !mayCommit())) {
-        return "stale";
-      }
-      if (!response?.sucess || !response.token ||
-          (response.environment && response.environment !== expected.environment)) {
-        return "invalid-token";
-      }
-
-      serverItem.token = response.token;
-      serverItem.environment = expected.environment;
-      if (response.user) serverItem.username = response.user;
-      doFinishConnectProcess(serverItem, response.token, expected.environment);
-      return "restored";
-    } finally {
-      if (timeout) clearTimeout(timeout);
-      cancellation.dispose();
-    }
-  });
+  return next;
 }
 
 export function connectServer(
@@ -591,54 +501,24 @@ export function authenticate(
   });
 }
 
-async function doReconnect(
+function doReconnect(
   serverItem: ServerItem,
   environment: string,
-  connType: ConnTypeIds,
-  generation: number
-): Promise<boolean> {
-  const reuseSavedToken = vscode.workspace.getConfiguration("totvsLanguageServer")
-    .get<boolean>("connection.useSavedToken", true) !== false;
-  if (!reuseSavedToken) {
-    // Some AppServers / Language Server sessions reject saved reconnect tokens
-    // even though they are not empty. Avoid sending the doomed RPC at all.
-    // The caller will proceed through Connect + Authentication.
-    return false;
-  }
+  connType: ConnTypeIds
+): Thenable<boolean> {
   const token = ServersConfig.getSavedTokens(serverItem.id, environment);
 
-  if (typeof token !== "string" || !token.trim()) {
-    // No reusable session: the caller must establish a new connection.
-    return false;
-  }
-
-  try {
-    const response: IReconnectInfo = await sendReconnectRequest(
-      serverItem, token, connType
+  if (token) {
+    return sendReconnectRequest(serverItem, token, connType).then(
+      (ri: IReconnectInfo) => {
+        if (ri.sucess) {
+          doFinishConnectProcess(serverItem, ri.token, environment);
+        }
+        return ri.sucess;
+      }
     );
-    if (generation !== connectionGeneration) return false;
-
-    if (!response?.sucess || !response.token) {
-      // A failed reconnect does not authorize clearing the saved credentials.
-      // Keep the token for diagnosis and require an explicit Connect to log in.
-      return false;
-    }
-
-    serverItem.username = response.user || serverItem.username;
-    doFinishConnectProcess(serverItem, response.token, environment);
-    return true;
-  } catch (error) {
-    if (generation !== connectionGeneration) return false;
-    if (!isRejectedReconnectToken(error)) {
-      // A network failure or another unexpected server error cannot be
-      // interpreted as an invalid token; preserve the real failure.
-      throw error;
-    }
-
-    // Reconnect must never silently become Connect. Preserve the token so
-    // transient Language Server failures do not erase the saved session.
-    console.warn("[Connection] The Language Server rejected the saved reconnect token:", error);
-    return false;
+  } else {
+    return Promise.resolve(false);
   }
 }
 
@@ -666,17 +546,11 @@ export function reconnectServer(
       async (progress) => {
         progress.report({ increment: 0 });
         try {
-          const reconnected = await doReconnect(serverItem, environment, connType, generation);
-          if (generation !== connectionGeneration) return;
+          const reconnected = await doReconnect(serverItem, environment, connType);
           if (!reconnected && generation === connectionGeneration) {
-            // The Reconnect command must only attempt to restore a saved session.
-            // A new login is exclusively the responsibility of the Connect command.
+            // An invalid token must not prevent a fresh connection.
             ServersConfig.markConnectionLost();
-            vscode.window.showWarningMessage(
-              "Could not restore the saved session for " + serverItem.name +
-              " (" + environment + "). The reconnect token may be missing or invalid. " +
-              "Use Connect to start a new authenticated session."
-            );
+            await doConnect(serverItem, environment, connType, generation);
           }
         } catch (error) {
           if (generation === connectionGeneration) {
@@ -692,12 +566,6 @@ export function reconnectServer(
 }
 
 export function reconnectLastServer(): Promise<void> {
-  // Automatic startup recovery must not unexpectedly open credentials if the
-  // user deliberately disabled reuse of saved session tokens.
-  if (vscode.workspace.getConfiguration("totvsLanguageServer")
-      .get<boolean>("connection.useSavedToken", true) === false) {
-    return Promise.resolve();
-  }
   const lastConnectedServer = ServersConfig.lastConnectedServer();
   if (!lastConnectedServer) return Promise.resolve();
   return reconnectServer(

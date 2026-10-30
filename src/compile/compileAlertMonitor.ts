@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import { isNewLanguageServerLogEntry, parseCompileLogError } from "./compileLogParser";
-import { recentTotvsRpcSummary } from "../server/connectionTokenGuard";
 
 interface PendingAlert {
   title: string;
@@ -188,40 +187,25 @@ export class CompilerObservedOutputChannel implements vscode.OutputChannel {
     const text = this.partialLine + value;
     const lines = text.split(/\r?\n/);
     this.partialLine = (lines.pop() || "").slice(-4000);
-    for (const line of lines) {
-      observeOutputLine(line);
-      // A server-side "token not informed" message can also come from an
-      // internal Language Server operation, not a rejected extension request.
-      // Correlate method names without exposing sensitive request arguments.
-      if (/Connection token was not informed\.?/i.test(line)) {
-        this.actual.appendLine(
-          "[Connection Diagnostics] Erro de validação do LS. " +
-          "Últimas operações do cliente (sem credenciais): " +
-          recentTotvsRpcSummary()
-        );
-      }
-    }
+    for (const line of lines) observeOutputLine(line);
   }
 
   // Arrow functions preserve their receiver when extension code extracts
   // outputChannel.appendLine into an unbound local variable.
   append = (value: string): void => {
-    // Display the original LS line before its explanation. The previous
-    // ordering made [Connection Diagnostics] appear above the error it
-    // described and looked like an unrelated preceding request.
-    this.actual.append(value);
     this.observe(value);
+    this.actual.append(value);
   };
 
   appendLine = (value: string): void => {
-    this.actual.appendLine(value);
     this.observe(value + "\n");
+    this.actual.appendLine(value);
   };
 
   replace = (value: string): void => {
     this.partialLine = "";
-    this.actual.replace(value);
     this.observe(value + "\n");
+    this.actual.replace(value);
   };
 
   clear = (): void => {

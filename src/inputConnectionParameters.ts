@@ -44,6 +44,7 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
 		server: QuickPickItem | string;
 		environment: QuickPickItem | string;
 		needAuthentication: true;
+		reconnectionToken: string;
 	}
 
 	async function collectConnectInputs() {
@@ -61,6 +62,14 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
 			state.environment = serverParam.label;
 		} else {
 			await MultiStepInput.run(input => pickServer(input, state));
+		}
+
+		// reconnection token requires server and environment informations
+		const configADVPL = workspace.getConfiguration('totvsLanguageServer');
+		if (reconnect) {//@acandido
+			let serverId = (typeof state.server === "string") ? state.server : (state.server as QuickPickItem).detail;
+			let environmentName = (typeof state.environment === "string") ? state.environment : (state.environment as QuickPickItem).label;
+			state.reconnectionToken = ServersConfig.getSavedTokens(serverId, environmentName);
 		}
 
 		return state as State;
@@ -174,10 +183,7 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
     }
     const environment = typeof connectState.environment === "string"
       ? connectState.environment : connectState.environment.label;
-    // Reconnect is a user-selected action, not a property of the cached
-    // token. reconnectServer decides whether a saved session can be reused
-    // and falls back to a fresh authenticated connection when necessary.
-    if (reconnect) {
+    if (connectState.reconnectionToken) {
       await reconnectServer(server, environment, connType);
     } else {
       await connectServer(server, environment, connType);

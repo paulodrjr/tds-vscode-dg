@@ -4,17 +4,6 @@ Esta versão usa a identidade original `TOTVS.tds-vscode` para substituir a exte
 
 ## Instalação e recuperação
 
-A partir das correções de conexão, o pacote recebeu versionamento separado
-para distinguir a instalação antiga dos novos VSIX. As correções da
-**reconexão manual** e a opção de **ignorar um token salvo rejeitado**
-estão na versão
-**2.0.17** (`tds-vscode-2.0.17.vsix`).
-
-O identificador continua sendo `TOTVS.tds-vscode`, para substituir
-a instalação anterior. Após instalar, confira **2.0.17** em
-**Extensões > TOTVS Developer Studio**.
-
-
 No checkout do fork:
 
 ```powershell
@@ -35,90 +24,6 @@ Instale o VSIX gerado via **Extensions: Install from VSIX**. O GitHub Actions ta
 ## Conexão
 
 Uma sessão antiga não deve substituir uma conexão mais recente depois que o usuário trocar de ambiente. Uma reconexão com token inválido pode iniciar uma nova autenticação. A verificação de conexão disponível pelo comando é manual: não há sondagem periódica padrão que possa interromper sessões por falsos positivos.
-
-### Correção: token de conexão não informado
-
-Se o Output do TOTVS LS exibir `Connection token was not informed`
-imediatamente após a autenticação, verifique a versão do fork. A
-rotina de conclusão da conexão agora atualiza o token autenticado no
-objeto de servidor antes de notificar visualizações e consumidores.
-
-O Monitor não consulta código de página, conexões ou estado de bloqueio
-até receber o seu token próprio. Atualizações repetidas das informações
-do servidor não devem reiniciar a sessão do Monitor. Requisições de
-informações, permissões ou monitoramento sem token são barradas
-localmente, sem enviar mensagens inválidas ao Language Server.
-
-Os arquivos de configuração de servidores e o armazenamento dos tokens
-não tiveram sua política de segurança alterada.
-
-Se a mensagem `Connection token was not informed` voltar a aparecer no
-canal **TOTVS LS**, a extensão agora acrescenta uma linha
-`[Connection Diagnostics]` com os nomes das requisições recentes (sem
-valores de tokens, senhas ou parâmetros). O cliente também registra e
-rejeita localmente qualquer RPC TOTVS com token vazio, informando o método
-e a origem da chamada. Essas informações permitem identificar a rotina
-responsável sem expor credenciais.
-
-### AppServer rejeita o token salvo na reconexão
-
-Se o Output mostrar uma operação `$totvsserver/reconnect (token informado)`
-seguida da mensagem `Connection token was not informed`, o cliente confirmou
-que **enviou um campo preenchido**, mas o Language Server recusou a operação.
-Isso não demonstra, por si só, se o token expirou, foi invalidado ou se houve
-uma falha interna no LS.
-
-Para não provocar a mesma rejeição repetidas vezes, desative **apenas no
-workspace do servidor afetado** a configuração abaixo:
-
-```json
-{
-  "totvsLanguageServer.connection.useSavedToken": false
-}
-```
-
-Com `false`, a opção **Reconectar** executa uma nova conexão e solicita
-autenticação quando o AppServer exigir, sem enviar `$totvsserver/reconnect`.
-O monitoramento periódico continua verificando a sessão, mas se detectar uma
-desconexão não tentará reutilizar o token desabilitado; avisará o usuário
-para reconectar manualmente. A tentativa automática de restaurar a última
-sessão na inicialização também é ignorada, evitando janelas inesperadas.
-
-O padrão permanece `true` para preservar a reconexão rápida dos demais
-servidores. Essa opção não altera o conteúdo ou o armazenamento dos tokens.
-Para depuração, as linhas `[Connection Diagnostics]` agora são exibidas
-**depois** do erro a que se referem.
-
-## Monitoramento periódico da conexão
-
-Por padrão, o TDS-VSCode confere a sessão autenticada no AppServer a cada
-60 segundos por meio de uma consulta de leitura (`serverInformations` ou
-`serverPermissions`). Não é um ping de IP e não gera compilação.
-
-Duas verificações consecutivas sem resposta iniciam até três tentativas
-de reconexão, com esperas de 3, 10 e 30 segundos. Cada requisição tem
-limite local de 12 segundos. O processo não é iniciado durante compilações,
-depurações ou operações manuais de conexão. Tentativas são canceladas se
-o usuário mudar de servidor ou ambiente.
-
-Uma sessão recusada pelo AppServer exige autenticação manual: o monitor
-não abre janelas de usuário e senha. Se a conexão for recuperada, a extensão
-registra o fato na saída `TOTVS LS`; quando as tentativas se esgotam, o
-indicador é atualizado e o usuário recebe um aviso. As consultas bem-sucedidas
-não produzem mensagens repetitivas.
-
-```json
-{
-  "totvsLanguageServer.connection.autoReconnect": true,
-  "totvsLanguageServer.connection.heartbeatInterval": 60,
-  "totvsLanguageServer.connection.maxReconnectAttempts": 3
-}
-```
-
-O monitor pode ser desativado pela primeira configuração; as mudanças
-são aplicadas imediatamente. O fluxo separado de recuperação após
-reinício do processo do Language Server continua existindo.
-
 
 ## Depuração
 

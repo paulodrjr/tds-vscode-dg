@@ -70,7 +70,6 @@ import { sendTelemetry } from "./protocolMessages";
 import { registerXRef } from "./xreferences";
 import { beginCompilationAlerts, finishCompilationAlerts, resetCompilationAlerts } from "./compile/compileAlertMonitor";
 import { checkRemoteConnection } from "./server/connectionHealth";
-import { ConnectionHeartbeatMonitor } from "./server/connectionHeartbeat";
 import { tlppTools } from "./tlpp-tools/tlppTools";
 import { openWebMonitor } from "./monitor/monitorLoader";
 
@@ -96,7 +95,6 @@ export function activate(context: ExtensionContext) {
 
   //Load Language Client and start Language Server
   languageClient = getLanguageClient(context);
-  context.subscriptions.push(new ConnectionHeartbeatMonitor());
 
   //createTimeLineDataProvider();
 
@@ -753,11 +751,6 @@ function showBanner(force: boolean = false) {
 
 let canBuild = true;
 let buildOperationId = 0;
-
-/** Monitoring must never initiate a reconnect while the RPO is being compiled. */
-export function isBuildOperationInProgress(): boolean {
-  return !canBuild;
-}
 
 /** Each compilation owns a unique generation; late responses cannot unlock another build. */
 export function beginBuildOperation(): number | undefined {
