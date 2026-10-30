@@ -15,11 +15,18 @@ import {
   sendConnectRequest,
   sendAuthenticateRequest,
   IAuthenticationInfo,
-  sendReconnectRequest,
   IReconnectInfo,
   ENABLE_CODE_PAGE,
 } from "./protocolMessages";
 import { EnvSection, ServerItem } from "./serverItem";
+import { ConnectionWatchdog } from "./server/connectionWatchdog";
+import { connectionPresentation } from "./server/connectionPresentation";
+import {
+  RecoveryFailure,
+  recoveryDiagnostic,
+  recoveryMessage,
+  requestSessionRecovery
+} from "./server/sessionRecovery";
 import { processSelectResourceMessage } from "./utilities/processSelectResource";
 
 const compile = require("template-literal");
@@ -154,6 +161,8 @@ export class ServersExplorer {
       treeDataProvider: serverProvider,
     };
     context.subscriptions.push(vscode.window.createTreeView("totvs_server", options));
+    // Opt-in watchdog. Disabled by default until validated against a real LS.
+    context.subscriptions.push(new ConnectionWatchdog());
 
     vscode.commands.registerCommand(
       "totvs-developer-studio.connect",
@@ -212,6 +221,7 @@ export class ServersExplorer {
       "totvs-developer-studio.disconnect",
       (serverItem: ServerItem) => {
         invalidateConnectionAttempts();
+        connectionPresentation.clear(serverItem.id);
         if (serverItem.isConnected) {
           return queueConnection(() => vscode.window.withProgress(
             {
@@ -353,6 +363,12 @@ function doFinishConnectProcess(
   token: string,
   environment: string
 ) {
+  if (typeof token !== "string" || !token.trim()) {
+    throw new Error("Language Server returned no authenticated connection token.");
+  }
+  // The tree/monitor may hold this same object. Update it before notifying them.
+  serverItem.token = token;
+  serverItem.environment = environment;
   ServersConfig.saveConnectionToken(serverItem.id, token, environment);
   ServersConfig.saveSelectServer(
     serverItem.id,
@@ -360,6 +376,8 @@ function doFinishConnectProcess(
     environment,
     serverItem.username
   );
+  // Only the server-confirmed, authenticated token returns the icon to green.
+  connectionPresentation.clear();
 
   runCommandUpdateMonitor();
   //let isSafeRPO = serverItem.isSafeRPO; // this is not working returning => undefined
@@ -392,6 +410,7 @@ function runCommandUpdateMonitor() {
 
 // Keep connection changes ordered so a delayed disconnect cannot clear a new session.
 let connectionQueue: Promise<void> = Promise.resolve();
+let queuedConnectionOperations = 0;
 let connectionGeneration = 0;
 let pendingAuthentication: { generation: number; serverId: string; environment: string; token: string } | undefined;
 
@@ -399,6 +418,11 @@ let pendingAuthentication: { generation: number; serverId: string; environment: 
 export function invalidateConnectionAttempts(): void {
   connectionGeneration++;
   pendingAuthentication = undefined;
+  // A canceled recovery must never leave a permanent rotating indicator.
+  const state = connectionPresentation.active();
+  if (state && state.phase !== "disconnected") {
+    connectionPresentation.setDisconnected(state.id, state.environment);
+  }
 }
 
 export async function cancelAuthentication(serverItem: ServerItem, generation: number): Promise<void> {
@@ -413,14 +437,68 @@ export async function cancelAuthentication(serverItem: ServerItem, generation: n
   }
 }
 
-function queueConnection(operation: () => Thenable<void>): Promise<void> {
+function queueConnection<T>(operation: () => Thenable<T>): Promise<T> {
+  queuedConnectionOperations++;
   const next = connectionQueue.then(operation, operation);
-  // Keep the queue usable after a failed request, but preserve the rejection
-  // for the command that initiated it.
-  connectionQueue = next.catch((error: any) => {
-    console.error("Server connection operation failed:", error);
+  // Keep the queue usable, and preserve the original rejection for the caller.
+  connectionQueue = next.then(() => undefined, (error: any) => {
+    console.error("Server connection operation failed:", error instanceof Error ? error.name : "unknown");
   });
-  return next;
+  // ES2016-compatible release (Promise.finally is not available in this target).
+  return next.then(value => {
+    queuedConnectionOperations--;
+    return value;
+  }, error => {
+    queuedConnectionOperations--;
+    throw error;
+  });
+}
+
+export function isConnectionOperationInProgress(): boolean {
+  return queuedConnectionOperations > 0 || pendingAuthentication !== undefined;
+}
+
+export interface ExpectedConnection {
+  id: string;
+  environment: string;
+  token: string;
+}
+
+export type SilentReconnectResult = "restored" | "stale" | "rejected" | "failed";
+
+function matchesSession(expected: ExpectedConnection): boolean {
+  const active = ServersConfig.getCurrentServer();
+  return !!active && active.id === expected.id &&
+    active.environment === expected.environment && active.token === expected.token;
+}
+
+/** Bounded, noninteractive restoration; cannot call Connect or ask credentials. */
+export function trySilentReconnectSession(
+  expected: ExpectedConnection,
+  mayCommit?: () => boolean
+): Promise<SilentReconnectResult> {
+  const generation = connectionGeneration;
+  return queueConnection(async (): Promise<SilentReconnectResult> => {
+    if (generation !== connectionGeneration || !matchesSession(expected)) return "stale";
+    const server = ServersConfig.getServerById(expected.id);
+    if (!server) return "stale";
+    try {
+      const result: IReconnectInfo = await requestSessionRecovery(
+        server, expected.environment, expected.token, ConnTypeIds.CONNT_DEBUGGER, "automatic"
+      );
+      if (generation !== connectionGeneration || !matchesSession(expected) ||
+          (mayCommit && !mayCommit())) return "stale";
+      if (result.user) server.username = result.user;
+      doFinishConnectProcess(server, result.token, expected.environment);
+      return "restored";
+    } catch (error) {
+      if (generation !== connectionGeneration || !matchesSession(expected)) return "stale";
+      if (error instanceof RecoveryFailure &&
+          (error.code === "SERVER_REJECTED_TOKEN" || error.code === "EMPTY_REPLY_TOKEN" ||
+           error.code === "WRONG_ENVIRONMENT")) return "rejected";
+      return "failed";
+    }
+  });
 }
 
 export function connectServer(
@@ -428,22 +506,31 @@ export function connectServer(
   environment: string,
   connType: ConnTypeIds
 ): Promise<void> {
+  // A recovering session has a cached token but is NOT necessarily connected.
+  // The user must still be able to choose Connect to authenticate afresh.
+  const wasRecovering = !!connectionPresentation.forEnvironment(serverItem.id, environment);
   const generation = ++connectionGeneration;
   pendingAuthentication = undefined;
   return queueConnection(async () => {
     if (generation !== connectionGeneration) return;
     const current = ServersConfig.getCurrentServer();
-    if (current && current.id === serverItem.id && current.environment === environment) {
+    if (current && current.id === serverItem.id && current.environment === environment && !wasRecovering) {
       vscode.window.showInformationMessage(
         vscode.l10n.t("The server selected is already connected.")
       );
       return;
     }
 
+    if (wasRecovering && current && current.id === serverItem.id && current.environment === environment) {
+      // Keep the saved token but retire this failed active session locally.
+      ServersConfig.markConnectionLost();
+    }
     const previous = serverProvider.connectedServerItem;
     if (previous) {
       await doDisconnect(previous);
     }
+    // Clear the old indicator only after the stale active session was removed.
+    connectionPresentation.clear();
 
     await vscode.window.withProgress(
       {
@@ -501,63 +588,79 @@ export function authenticate(
   });
 }
 
-function doReconnect(
+async function doReconnect(
   serverItem: ServerItem,
   environment: string,
-  connType: ConnTypeIds
-): Thenable<boolean> {
-  const token = ServersConfig.getSavedTokens(serverItem.id, environment);
-
-  if (token) {
-    return sendReconnectRequest(serverItem, token, connType).then(
-      (ri: IReconnectInfo) => {
-        if (ri.sucess) {
-          doFinishConnectProcess(serverItem, ri.token, environment);
-        }
-        return ri.sucess;
-      }
-    );
-  } else {
-    return Promise.resolve(false);
-  }
+  connType: ConnTypeIds,
+  generation: number,
+  mode: "manual" | "startup"
+): Promise<void> {
+  const savedToken = ServersConfig.getSavedTokens(serverItem.id, environment);
+  const result: IReconnectInfo = await requestSessionRecovery(
+    serverItem, environment, savedToken || "", connType, mode
+  );
+  // An old or canceled request is NEVER allowed to replace a newer session.
+  if (generation !== connectionGeneration) return;
+  if (result.user) serverItem.username = result.user;
+  doFinishConnectProcess(serverItem, result.token, environment);
 }
 
+/**
+ * Explicit Reconnect only. An invalid or expired token must NOT be converted
+ * into a new Connect operation: authentication requires an explicit Connect.
+ * In particular, never send Disconnect for the existing session just to retry.
+ */
 export function reconnectServer(
   serverItem: ServerItem,
   environment: string,
-  connType: ConnTypeIds
+  connType: ConnTypeIds,
+  silent = false
 ): Promise<void> {
   const generation = ++connectionGeneration;
   pendingAuthentication = undefined;
   return queueConnection(async () => {
     if (generation !== connectionGeneration) return;
     const previous = serverProvider.connectedServerItem;
-    // Reconnect uses the saved token: disconnecting the same session first could
-    // invalidate that token. Disconnect only when switching servers/environments.
     if (previous && (previous.id !== serverItem.id || previous.environment !== environment)) {
-      await doDisconnect(previous);
+      recoveryDiagnostic(silent ? "startup" : "manual", "skip", "DIFFERENT_ACTIVE_SESSION");
+      if (!silent) vscode.window.showWarningMessage(
+        "Existe outra sessão ativa. Use Disconnect antes de reconectar a outro servidor/ambiente."
+      );
+      return;
     }
 
+    // The manual/startup attempt has begun: a cached green icon is no longer
+    // trustworthy until the remote Language Server confirms reconnection.
+    connectionPresentation.setReconnecting(serverItem.id, environment, 1, 1);
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Window,
-        title: vscode.l10n.t("Reconnecting to the server {0}", serverItem.name),
+        title: vscode.l10n.t("Reconnecting to the server {0}", serverItem.name)
       },
       async (progress) => {
         progress.report({ increment: 0 });
         try {
-          const reconnected = await doReconnect(serverItem, environment, connType);
-          if (!reconnected && generation === connectionGeneration) {
-            // An invalid token must not prevent a fresh connection.
-            ServersConfig.markConnectionLost();
-            await doConnect(serverItem, environment, connType, generation);
-          }
+          await doReconnect(serverItem, environment, connType, generation,
+            silent ? "startup" : "manual");
+          // doFinishConnectProcess clears the icon only on confirmed success.
         } catch (error) {
           if (generation === connectionGeneration) {
-            ServersConfig.markConnectionLost();
+            // Do not delete saved tokens: the server may recover later.
+            // Mark the actual connection as lost, so other views cannot remain green.
+            connectionPresentation.setDisconnected(serverItem.id, environment);
+            const active = ServersConfig.getCurrentServer();
+            if (active && active.id === serverItem.id && active.environment === environment) {
+              ServersConfig.markConnectionLost();
+            }
+            if (!silent) {
+              vscode.window.showWarningMessage(
+                "Não foi possível reconectar a " + serverItem.name + " / " + environment + ". " +
+                recoveryMessage(error) + " Use Connect para autenticar novamente, se necessário."
+              );
+            }
           }
-          throw error;
         } finally {
+          // On a superseded attempt, the newer operation owns the indicator.
           progress.report({ increment: 100 });
         }
       }
@@ -566,18 +669,10 @@ export function reconnectServer(
 }
 
 export function reconnectLastServer(): Promise<void> {
-  const lastConnectedServer = ServersConfig.lastConnectedServer();
-  if (!lastConnectedServer) return Promise.resolve();
-  return reconnectServer(
-    lastConnectedServer,
-    lastConnectedServer.environment,
-    ConnTypeIds.CONNT_DEBUGGER
-  ).catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    vscode.window.showWarningMessage(
-      "Could not restore the last server connection: " + message
-    );
-  });
+  const last = ServersConfig.lastConnectedServer();
+  if (!last || !last.environment) return Promise.resolve();
+  // Startup recovery never asks for credentials or falls back to Connect.
+  return reconnectServer(last, last.environment, ConnTypeIds.CONNT_DEBUGGER, true);
 }
 
 class NodeError {
@@ -596,6 +691,8 @@ async function doDisconnect(serverItem: ServerItem): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     vscode.window.showWarningMessage(vscode.l10n.t("Unable to confirm remote disconnect: {0}", message));
   } finally {
+    // Explicit disconnect removes a pending/rejected indicator as well.
+    connectionPresentation.clear(serverItem.id);
     // The local session is disconnected regardless of the remote response.
     // Avoid invalidating another session if a late response arrives.
     const current = ServersConfig.getCurrentServer();

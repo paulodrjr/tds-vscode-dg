@@ -16,7 +16,7 @@ import { ServerItem, EnvSection } from "./serverItem";
  *
  * This first part uses the helper class `MultiStepInput` that wraps the API for the multi-step case.
  */
-export async function inputConnectionParameters(context: ExtensionContext, serverParam: any, connType: ConnTypeIds, reconnect: boolean) {
+export async function inputConnectionParameters(context: ExtensionContext, serverParam: any, connType: ConnTypeIds, reconnect: boolean, allowSelectFallback = false) {
 
 	//const VALIDADE_TIME_OUT = 1000;
 	const title = vscode.l10n.t('Connection');
@@ -183,7 +183,9 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
     }
     const environment = typeof connectState.environment === "string"
       ? connectState.environment : connectState.environment.label;
-    if (connectState.reconnectionToken) {
+    // The Reconnect menu must remain a token-only operation even when the
+    // saved token is missing. Otherwise the UI unexpectedly opens credentials.
+    if (reconnect && !(allowSelectFallback && !connectState.reconnectionToken)) {
       await reconnectServer(server, environment, connType);
     } else {
       await connectServer(server, environment, connType);
@@ -198,8 +200,8 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
 
 export function serverSelection(args, context) {
 	if (args && args.length > 0) {
-		inputConnectionParameters(context, args[0], ConnTypeIds.CONNT_DEBUGGER, true);
+		inputConnectionParameters(context, args[0], ConnTypeIds.CONNT_DEBUGGER, true, true);
 	} else {
-		inputConnectionParameters(context, undefined, ConnTypeIds.CONNT_DEBUGGER, true);
+		inputConnectionParameters(context, undefined, ConnTypeIds.CONNT_DEBUGGER, true, true);
 	}
 }

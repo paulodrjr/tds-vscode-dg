@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import serverProvider from "./serverItemProvider";
+import { connectionPresentation, ConnectionVisualState } from "./server/connectionPresentation";
 
 const RESOURCE_FOLDER = path.join(vscode.extensions.getExtension("TOTVS.tds-vscode")?.extensionPath || path.resolve(__dirname, ".."), "resources");
 const RESOURCE_DARK = path.join(RESOURCE_FOLDER, "dark");
@@ -16,6 +17,20 @@ export interface IServerInformations {
   serverDetectedType: string;
   environmentDetectedType: ServerType;
   permissions: string[];
+}
+
+function reconnectText(status: ConnectionVisualState): string {
+  return status.attempt > 0
+    ? `Reconectando (${status.attempt}/${status.maxAttempts})`
+    : "Reconectando (aguardando tentativa)";
+}
+
+function recoveryIcon(status: ConnectionVisualState): vscode.ThemeIcon {
+  return status.phase === "verifying"
+    ? new vscode.ThemeIcon("loading~spin", new vscode.ThemeColor("charts.yellow"))
+    : status.phase === "reconnecting"
+      ? new vscode.ThemeIcon("sync~spin", new vscode.ThemeColor("charts.yellow"))
+      : new vscode.ThemeIcon("debug-disconnect", new vscode.ThemeColor("charts.red"));
 }
 
 export class ServerItem extends vscode.TreeItem {
@@ -42,29 +57,39 @@ export class ServerItem extends vscode.TreeItem {
   }
 
   public get isConnected(): boolean {
-    return serverProvider.isConnected(this);
+    // A session in recovery cannot be presented as already connected.
+    return !connectionPresentation.forServer(this.id) && serverProvider.isConnected(this);
   }
 
   public get isServerP20OrGreater(): boolean {
-    //return Utils.isServerP20OrGreater(this); //<< não usar. causa "referencia circular". acandido
-
     if (this.buildVersion) {
       return this.buildVersion.localeCompare("7.00.191205P") > 0;
     }
-
     return false;
   }
 
   description = `${this.address}:${this.port}`;
   tooltip = `${serverTypeString(this.type)} ${this.buildVersion}`;
-  // Tree item fields are refreshed when the provider requests them, not during
-  // initialization, when connection state and derived properties may be stale.
+
   public updatePresentation(): void {
+    const status = connectionPresentation.forServer(this.id);
+    if (status) {
+      const message = status.phase === "verifying" ? "Verificando conexão" :
+        status.phase === "reconnecting" ? reconnectText(status) : "Desconectado";
+      this.iconPath = recoveryIcon(status);
+      this.description = `${this.address}:${this.port} · ${message}`;
+      this.tooltip = `${this.name} / ${status.environment}: ${message}`;
+      this.contextValue = "serverItemNotConnected";
+      return;
+    }
+
     const icon = serverTypeImage(this);
     this.iconPath = {
       light: vscode.Uri.file(path.join(RESOURCE_LIGHT, icon)),
       dark: vscode.Uri.file(path.join(RESOURCE_DARK, icon)),
     };
+    this.description = `${this.address}:${this.port}`;
+    this.tooltip = `${serverTypeString(this.type)} ${this.buildVersion}`;
     this.contextValue = this.isConnected ? "serverItem" : "serverItemNotConnected";
   }
 }
@@ -78,15 +103,28 @@ export class EnvSection extends vscode.TreeItem {
   }
 
   public get isCurrent(): boolean {
-    return serverProvider.isCurrentEnvironment(this);
+    return !connectionPresentation.forEnvironment(this.serverItemParent.id, this.label) &&
+      serverProvider.isCurrentEnvironment(this);
   }
 
   public updatePresentation(): void {
+    const status = connectionPresentation.forEnvironment(this.serverItemParent.id, this.label);
+    if (status) {
+      const message = status.phase === "verifying" ? "Verificando conexão" :
+        status.phase === "reconnecting" ? reconnectText(status) : "Desconectado";
+      this.iconPath = recoveryIcon(status);
+      this.description = message;
+      this.tooltip = `${this.label} @ ${this.serverItemParent.label}: ${message}`;
+      this.contextValue = "envSectionNotCurrent";
+      return;
+    }
+
     const icon = environmentTypeImage(this);
     this.iconPath = {
       light: vscode.Uri.file(path.join(RESOURCE_LIGHT, icon)),
       dark: vscode.Uri.file(path.join(RESOURCE_DARK, icon)),
     };
+    this.description = undefined;
     this.tooltip = environmentTypeString(this);
     this.contextValue = this.isCurrent ? "envSection" : "envSectionNotCurrent";
   }
@@ -94,16 +132,13 @@ export class EnvSection extends vscode.TreeItem {
 
 function serverTypeString(type: ServerType): string {
   const label: string = type.substring(type.lastIndexOf("_") + 1);
-
   return label.charAt(0).toUpperCase() + label.substring(1);
 }
 
 function serverTypeImage(server: ServerItem): string {
   const type: ServerType = server.type;
   const connected: boolean = server.isConnected;
-
   const sufix: string = type.substring(type.lastIndexOf("_") + 1);
-
   return connected ? `server_${sufix}_connected.svg` : `server_${sufix}.svg`;
 }
 
@@ -114,9 +149,6 @@ function environmentTypeString(environment: EnvSection): string {
 function environmentTypeImage(environment: EnvSection): string {
   let sufix: string = "";
   const server: ServerItem = environment.serverItemParent;
-
-  //esta chegando somente os dados!!! acandido
-  //if (server.isServerP20OrGreater) {
   if (server.buildVersion) {
     if ((server.buildVersion.localeCompare("7.00.191205P") > 0) && (environment.isCurrent)) {
       const type: ServerType = server.type;
@@ -128,12 +160,8 @@ function environmentTypeImage(environment: EnvSection): string {
         sufix = "_" + type.substring(type.lastIndexOf("_") + 1);
       }
     }
-
     const current: boolean = environment.isCurrent;
-    if (current) {
-      sufix += "_connected";
-    }
+    if (current) sufix += "_connected";
   }
-
   return `environment${sufix}.svg`;
 }

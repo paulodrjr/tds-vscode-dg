@@ -64,6 +64,7 @@ import { TotvsLanguageClientA } from "./TotvsLanguageClientA";
 import { commandShowBuildTableResult } from "./compile/buildResult";
 import { ServerItem } from "./serverItem";
 import serverProvider from "./serverItemProvider";
+import { connectionPresentation } from "./server/connectionPresentation";
 //import { ReplayRegisterCommands } from "./debug/tdsreplay/RegisterReplayCommands";
 import { registerWorkspace } from "./workspace";
 import { sendTelemetry } from "./protocolMessages";
@@ -92,6 +93,10 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand("tds.getDAP", () => getDAP())
   );
+
+  // Synchronize the tree icons while recovery runs, without clearing the saved token.
+  context.subscriptions.push(connectionPresentation.onDidChange(() => serverProvider.refresh()));
+  context.subscriptions.push(connectionPresentation);
 
   //Load Language Client and start Language Server
   languageClient = getLanguageClient(context);
@@ -763,6 +768,11 @@ export function beginBuildOperation(): number | undefined {
   beginCompilationAlerts(buildOperationId);
   void commands.executeCommand("setContext", "tds-vscode.canBuild", false);
   return buildOperationId;
+}
+
+/** Read-only compile guard for the opt-in connection watchdog. */
+export function isBuildOperationInProgress(): boolean {
+  return !canBuild;
 }
 
 export function isBuildOperationActive(id: number): boolean {

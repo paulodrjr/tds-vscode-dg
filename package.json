@@ -732,6 +732,25 @@
           "type": "boolean",
           "default": true,
           "description": "Exibe uma janela de erro modal quando uma compilação falhar (ERROR/FATAL ou falha reportada pelo Language Server). Ao desativar, os diagnósticos continuam disponíveis na saída TOTVS LS e na visão Problemas."
+        },
+        "totvsLanguageServer.connection.autoReconnect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Habilita o monitoramento da sessão do AppServer e a reconexão automática sem solicitar credenciais. Desativado por padrão nesta versão experimental."
+        },
+        "totvsLanguageServer.connection.heartbeatInterval": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 3600,
+          "description": "Intervalo, em segundos, entre as verificações periódicas de sessão (30 a 3600)."
+        },
+        "totvsLanguageServer.connection.maxReconnectAttempts": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 3,
+          "description": "Número máximo de tentativas automáticas de recuperação da sessão (1 a 3)."
         }
       }
     },
