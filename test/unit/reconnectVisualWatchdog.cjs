@@ -156,4 +156,16 @@ async function testRecoverySuccess() {
   console.log("PASS automatic watchdog: successful reconnect clears spinner without losing session");
 }
 
-(async()=>{await testFailureStates();await testRecoverySuccess();})().catch(e=>{console.error(e);process.exitCode=1;});
+function testWatchdogRegisteredOnActivation() {
+  const extension = fs.readFileSync(path.join(root, "src/extension.ts"), "utf8");
+  assert.match(extension, /import\s*\{\s*ConnectionWatchdog\s*\}\s*from\s*["']\.\/server\/connectionWatchdog["']/);
+  const clientStart = extension.indexOf("languageClient = getLanguageClient(context);");
+  const watchdogStart = extension.indexOf("context.subscriptions.push(new ConnectionWatchdog());");
+  assert.ok(clientStart >= 0 && watchdogStart > clientStart,
+    "The watchdog must be started by activate() after the Language Client is assigned");
+  assert.match(extension, /connectionPresentation\.onDidChange\(\(\)\s*=>\s*serverProvider\.refresh\(\)\)/,
+    "Visual state changes must trigger a server tree refresh");
+  console.log("PASS activation starts the connection watchdog and subscribes tree updates");
+}
+
+(async()=>{testWatchdogRegisteredOnActivation();await testFailureStates();await testRecoverySuccess();})().catch(e=>{console.error(e);process.exitCode=1;});

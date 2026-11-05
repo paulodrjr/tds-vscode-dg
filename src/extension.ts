@@ -65,6 +65,7 @@ import { commandShowBuildTableResult } from "./compile/buildResult";
 import { ServerItem } from "./serverItem";
 import serverProvider from "./serverItemProvider";
 import { connectionPresentation } from "./server/connectionPresentation";
+import { ConnectionWatchdog } from "./server/connectionWatchdog";
 //import { ReplayRegisterCommands } from "./debug/tdsreplay/RegisterReplayCommands";
 import { registerWorkspace } from "./workspace";
 import { sendTelemetry } from "./protocolMessages";
@@ -100,6 +101,9 @@ export function activate(context: ExtensionContext) {
 
   //Load Language Client and start Language Server
   languageClient = getLanguageClient(context);
+  // Start the opt-in session monitor after the language client exists.
+  // Without this instance, the saved green icon never follows heartbeat failures.
+  context.subscriptions.push(new ConnectionWatchdog());
 
   //createTimeLineDataProvider();
 
