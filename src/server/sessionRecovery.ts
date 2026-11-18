@@ -48,7 +48,7 @@ export function recoveryDiagnostic(
 
 export function recoveryMessage(error: unknown): string {
   if (!(error instanceof RecoveryFailure)) {
-    return "O Language Server retornou um erro inesperado. Consulte TOTVS LS.";
+    return "A chamada RPC de reconexão falhou. Consulte o detalhe em Saída > TOTVS LS.";
   }
   switch (error.code) {
     case "NO_SAVED_TOKEN":
