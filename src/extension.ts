@@ -14,7 +14,8 @@ import {
   StatusBarAlignment,
 } from "vscode";
 import Utils, { LaunchConfig, ServersConfig } from "./utils";
-import { createNewProtheusServer, ServersExplorer } from "./serversView";
+import { createNewProtheusServer, ServersExplorer, isConnectionOperationInProgress, invalidateConnectionAttempts } from "./serversView";
+import { State } from "vscode-languageclient";
 import { compileKeyPage } from "./compileKey/compileKey";
 import { getLanguageClient } from "./TotvsLanguageClient";
 import { patchGenerate } from "./patch/patchGenerate";
@@ -76,6 +77,7 @@ import { tlppTools } from "./tlpp-tools/tlppTools";
 import { openWebMonitor } from "./monitor/monitorLoader";
 
 export let languageClient: TotvsLanguageClientA;
+let restartingTotvsLanguageServer = false;
 
 export function parseUri(u): Uri {
   return Uri.parse(u);
@@ -101,6 +103,55 @@ export function activate(context: ExtensionContext) {
 
   //Load Language Client and start Language Server
   languageClient = getLanguageClient(context);
+
+  // Recovery from a stale advpls.exe process without closing VS Code.
+  // Never interrupt compilation, debugging or a concurrent connection change.
+  context.subscriptions.push(commands.registerCommand(
+    "totvs-developer-studio.restartLanguageServer",
+    async () => {
+      if (restartingTotvsLanguageServer) return;
+      if (isBuildOperationInProgress() || isConnectionOperationInProgress() ||
+          vscode.debug.activeDebugSession) {
+        window.showWarningMessage(
+          "Não é possível reiniciar o TOTVS LS durante compilação, depuração ou operação de conexão."
+        );
+        return;
+      }
+      if (languageClient.state === State.Starting) {
+        window.showWarningMessage("O TOTVS LS ainda está inicializando.");
+        return;
+      }
+
+      restartingTotvsLanguageServer = true;
+      try {
+        languageClient.outputChannel?.appendLine(
+          "[Session Recovery] Reinício manual do TOTVS LS solicitado."
+        );
+        // Stop/start only the local language server. Saved server tokens and
+        // credentials in servers.json must not be changed.
+        invalidateConnectionAttempts();
+        if (languageClient.state === State.Running) {
+          await languageClient.stop(5000);
+        }
+        // Retire the previously displayed session even if the LS was stopped.
+        ServersConfig.markConnectionLost();
+        await languageClient.start();
+        languageClient.ready = true;
+        window.showInformationMessage(
+          "TOTVS Language Server reiniciado. Caso não reconecte automaticamente, use Connect."
+        );
+      } catch (error) {
+        languageClient.ready = false;
+        const message = error instanceof Error ? error.message : String(error);
+        languageClient.outputChannel?.appendLine(
+          "[Session Recovery] Falha ao reiniciar o TOTVS LS: " + message
+        );
+        window.showErrorMessage("Não foi possível reiniciar o TOTVS LS. Consulte TOTVS LS.");
+      } finally {
+        restartingTotvsLanguageServer = false;
+      }
+    }
+  ));
   // Start the opt-in session monitor after the language client exists.
   // Without this instance, the saved green icon never follows heartbeat failures.
   context.subscriptions.push(new ConnectionWatchdog());
