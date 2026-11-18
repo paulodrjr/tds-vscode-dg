@@ -1219,10 +1219,54 @@ function getServersConfig() {
 function persistServersInfo(JSONServerInfo) {
   const target = ServersConfig.getServerConfigFile();
   const temporary = target + "." + process.pid + ".tmp";
+  const contents = JSON.stringify(JSONServerInfo, null, "\t");
   try {
-    fs.writeFileSync(temporary, JSON.stringify(JSONServerInfo, null, "\t"), "utf8");
-    fs.renameSync(temporary, target);
+    fs.writeFileSync(temporary, contents, "utf8");
+    try {
+      fs.renameSync(temporary, target);
+    } catch (renameError) {
+      const code = (renameError as NodeJS.ErrnoException).code;
+      // Windows can deny replacing an existing file even when it is writable.
+      // Only use the non-atomic fallback for this specific replacement failure.
+      if (process.platform !== "win32" ||
+          !["EPERM", "EACCES", "EBUSY"].includes(code) ||
+          !fs.existsSync(target)) {
+        throw renameError;
+      }
+
+      // Keep the original file recoverable if the in-place write also fails.
+      const backup = target + "." + process.pid + "." + Date.now() + ".bak";
+      fs.copyFileSync(target, backup, fs.constants.COPYFILE_EXCL);
+      let keepBackup = false;
+      try {
+        fs.writeFileSync(target, contents, "utf8");
+      } catch (writeError) {
+        try {
+          fs.copyFileSync(backup, target);
+        } catch (restoreError) {
+          keepBackup = true;
+          throw new Error(
+            "Failed to write servers.json and restore the original. " +
+            "Backup preserved at " + backup + ". " +
+            "Write error: " + String(writeError) + ". " +
+            "Restore error: " + String(restoreError)
+          );
+        }
+        throw writeError;
+      } finally {
+        if (!keepBackup) {
+          try {
+            fs.unlinkSync(backup);
+          } catch (cleanupError) {
+            console.warn("Could not remove temporary servers.json backup:", backup, cleanupError);
+          }
+        }
+      }
+    }
   } catch (error) {
+    console.error("Failed to persist servers configuration:", error);
+    throw error;
+  } finally {
     try {
       if (fs.existsSync(temporary)) {
         fs.unlinkSync(temporary);
@@ -1230,8 +1274,6 @@ function persistServersInfo(JSONServerInfo) {
     } catch (cleanupError) {
       console.error("Failed to clean temporary servers configuration:", cleanupError);
     }
-    console.error("Failed to persist servers configuration:", error);
-    throw error;
   }
 }
 
