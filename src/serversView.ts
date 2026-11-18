@@ -664,6 +664,7 @@ export function reconnectServer(
                     "totvs-developer-studio.restartLanguageServer"
                   );
                 }
+                return undefined;
               });
             }
           }
