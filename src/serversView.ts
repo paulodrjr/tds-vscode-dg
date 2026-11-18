@@ -19,7 +19,6 @@ import {
   ENABLE_CODE_PAGE,
 } from "./protocolMessages";
 import { EnvSection, ServerItem } from "./serverItem";
-import { ConnectionWatchdog } from "./server/connectionWatchdog";
 import { connectionPresentation } from "./server/connectionPresentation";
 import {
   RecoveryFailure,
@@ -161,9 +160,6 @@ export class ServersExplorer {
       treeDataProvider: serverProvider,
     };
     context.subscriptions.push(vscode.window.createTreeView("totvs_server", options));
-    // Opt-in watchdog. Disabled by default until validated against a real LS.
-    context.subscriptions.push(new ConnectionWatchdog());
-
     vscode.commands.registerCommand(
       "totvs-developer-studio.connect",
       (serverItem: ServerItem) => {
@@ -653,10 +649,22 @@ export function reconnectServer(
               ServersConfig.markConnectionLost();
             }
             if (!silent) {
-              vscode.window.showWarningMessage(
-                "Não foi possível reconectar a " + serverItem.name + " / " + environment + ". " +
-                recoveryMessage(error) + " Use Connect para autenticar novamente, se necessário."
-              );
+              const restartable = error instanceof RecoveryFailure &&
+                ["RPC_ERROR", "TIMED_OUT", "LS_NOT_READY"].includes(error.code);
+              const restartAction = "Reiniciar TOTVS LS";
+              const message = "Não foi possível reconectar a " + serverItem.name +
+                " / " + environment + ". " + recoveryMessage(error) +
+                " Use Connect para autenticar novamente, se necessário.";
+              const notification = restartable
+                ? vscode.window.showWarningMessage(message, restartAction)
+                : vscode.window.showWarningMessage(message);
+              void notification.then(choice => {
+                if (choice === restartAction) {
+                  return vscode.commands.executeCommand(
+                    "totvs-developer-studio.restartLanguageServer"
+                  );
+                }
+              });
             }
           }
         } finally {
