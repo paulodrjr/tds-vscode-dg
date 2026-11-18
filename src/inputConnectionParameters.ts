@@ -66,10 +66,14 @@ export async function inputConnectionParameters(context: ExtensionContext, serve
 
 		// reconnection token requires server and environment informations
 		const configADVPL = workspace.getConfiguration('totvsLanguageServer');
-		if (reconnect) {//@acandido
-			let serverId = (typeof state.server === "string") ? state.server : (state.server as QuickPickItem).detail;
-			let environmentName = (typeof state.environment === "string") ? state.environment : (state.environment as QuickPickItem).label;
-			state.reconnectionToken = ServersConfig.getSavedTokens(serverId, environmentName);
+		// The connection wizard may be canceled before a server/environment is selected.
+		// Never read .label or .detail from an incomplete selection.
+		if (reconnect && state.server && state.environment) {
+			const serverId = (typeof state.server === "string") ? state.server : state.server.detail;
+			const environmentName = (typeof state.environment === "string") ? state.environment : state.environment.label;
+			if (serverId && environmentName) {
+				state.reconnectionToken = ServersConfig.getSavedTokens(serverId, environmentName);
+			}
 		}
 
 		return state as State;
